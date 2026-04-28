@@ -51,12 +51,14 @@ export function JogControls({ disabled, onError, onSetHome, dragRef }: JogContro
     <SidebarPanel title="Manual Control" dragRef={dragRef}>
       <div className="flex flex-col gap-2 p-4">
         {/* Jog Distance Selection */}
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           {[1, 10, 50, 100].map((dist) => (
             <Button
               key={dist}
-              variant={jogDistance === dist ? "default" : "outline"}
+              variant={jogDistance === dist ? "secondary" : "outline"}
+              size="sm"
               onClick={() => setJogDistance(dist)}
+              className="flex-1"
             >
               {dist}mm
             </Button>
@@ -64,7 +66,7 @@ export function JogControls({ disabled, onError, onSetHome, dragRef }: JogContro
         </div>
 
         {/* XY Jog Pad */}
-        <div className="grid grid-cols-3">
+        <div className="grid grid-cols-3 p-2 bg-foreground/2 border border-foreground/3 rounded-lg">
           <div className="h-8" aria-hidden />
           <div>
             <Button variant="outline" className="w-full" onClick={() => handleJog('Y', 1)} disabled={disabled}>

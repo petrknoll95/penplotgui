@@ -41,9 +41,8 @@ export function ControlPanel({ status, filename, onError, optimizationMethod = '
 
   const handleTestPlot = async () => {
     try {
-      // Use artboard dimensions if enabled, otherwise use default A4
-      const width = artboardSettings?.enabled ? artboardSettings.width : 210;
-      const height = artboardSettings?.enabled ? artboardSettings.height : 297;
+      const width = artboardSettings?.width ?? 210;
+      const height = artboardSettings?.height ?? 297;
       await api.testPlot(width, height);
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Failed to start test plot');
@@ -64,7 +63,7 @@ export function ControlPanel({ status, filename, onError, optimizationMethod = '
         scale_value: positionSettings?.scale_value,
         target_width: positionSettings?.target_width,
         target_height: positionSettings?.target_height,
-        artboard_enabled: artboardSettings?.enabled,
+        artboard_enabled: true,
         artboard_width: artboardSettings?.width,
         artboard_height: artboardSettings?.height,
       });

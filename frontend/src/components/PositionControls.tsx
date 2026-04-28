@@ -1,15 +1,33 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SidebarPanel } from '@/components/ui/sidebar-panel';
-import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import {
+  AlignBottomSimple,
+  AlignCenterHorizontalSimple,
+  AlignCenterVerticalSimple,
+  AlignLeftSimple,
+  AlignRightSimple,
+  AlignTopSimple,
+} from '@phosphor-icons/react';
 import { PathData, Dimensions, Bed, ArtboardSettings, ArtboardPreset, ARTBOARD_PRESETS } from '../types';
 import type { ConnectDragSource } from 'react-dnd';
 
 type Alignment = 'center' | 'top-left' | 'top' | 'top-right' | 'left' | 'right' | 'bottom-left' | 'bottom' | 'bottom-right' | 'custom';
+type HorizontalAlignment = 'left' | 'center' | 'right';
+type VerticalAlignment = 'top' | 'center' | 'bottom';
 type ScaleMode = 'fit' | 'percent' | 'width' | 'height';
+type RepositionOptions = {
+  newAlignment?: Alignment;
+  newScaleMode?: ScaleMode;
+  newScalePercent?: number;
+  newTargetWidth?: number;
+  newTargetHeight?: number;
+  nextArtboardSettings?: ArtboardSettings;
+};
 
 const ARTBOARD_PRESET_ORDER: ArtboardPreset[] = ['36x48', 'a4', 'a3', 'a5', 'letter', 'custom'];
 const SCALE_MODE_ITEMS: Array<{ value: ScaleMode; label: string }> = [
@@ -18,17 +36,49 @@ const SCALE_MODE_ITEMS: Array<{ value: ScaleMode; label: string }> = [
   { value: 'width', label: 'W' },
   { value: 'height', label: 'H' },
 ];
-const ALIGNMENT_ITEMS: Array<{ value: Alignment; label: string; ariaLabel: string }> = [
-  { value: 'top-left', label: '↖', ariaLabel: 'Align top left' },
-  { value: 'top', label: '↑', ariaLabel: 'Align top' },
-  { value: 'top-right', label: '↗', ariaLabel: 'Align top right' },
-  { value: 'left', label: '←', ariaLabel: 'Align left' },
-  { value: 'center', label: '◎', ariaLabel: 'Align center' },
-  { value: 'right', label: '→', ariaLabel: 'Align right' },
-  { value: 'bottom-left', label: '↙', ariaLabel: 'Align bottom left' },
-  { value: 'bottom', label: '↓', ariaLabel: 'Align bottom' },
-  { value: 'bottom-right', label: '↘', ariaLabel: 'Align bottom right' },
-];
+const HORIZONTAL_ALIGNMENT_ITEMS = [
+  { value: 'left', ariaLabel: 'Align left', icon: AlignLeftSimple },
+  { value: 'center', ariaLabel: 'Align horizontal center', icon: AlignCenterHorizontalSimple },
+  { value: 'right', ariaLabel: 'Align right', icon: AlignRightSimple },
+] satisfies Array<{ value: HorizontalAlignment; ariaLabel: string; icon: typeof AlignLeftSimple }>;
+const VERTICAL_ALIGNMENT_ITEMS = [
+  { value: 'top', ariaLabel: 'Align top', icon: AlignTopSimple },
+  { value: 'center', ariaLabel: 'Align vertical center', icon: AlignCenterVerticalSimple },
+  { value: 'bottom', ariaLabel: 'Align bottom', icon: AlignBottomSimple },
+] satisfies Array<{ value: VerticalAlignment; ariaLabel: string; icon: typeof AlignTopSimple }>;
+
+const getHorizontalAlignment = (alignment: Alignment): HorizontalAlignment | null => {
+  if (alignment === 'custom') return null;
+  if (alignment.includes('left')) return 'left';
+  if (alignment.includes('right')) return 'right';
+  return 'center';
+};
+
+const getVerticalAlignment = (alignment: Alignment): VerticalAlignment | null => {
+  if (alignment === 'custom') return null;
+  if (alignment.includes('top')) return 'top';
+  if (alignment.includes('bottom')) return 'bottom';
+  return 'center';
+};
+
+const composeAlignment = (
+  horizontal: HorizontalAlignment,
+  vertical: VerticalAlignment
+): Alignment => {
+  if (horizontal === 'center' && vertical === 'center') return 'center';
+  if (horizontal === 'center') return vertical;
+  if (vertical === 'center') return horizontal;
+  return `${vertical}-${horizontal}` as Alignment;
+};
+
+const alignmentSegmentGroupClass =
+  "grid grid-cols-3 gap-0 overflow-hidden rounded-md border border-button-border-idle bg-button-bg-idle p-0.5";
+const alignmentSegmentClass =
+  "h-7 min-w-0 rounded-none bg-transparent px-0 border-0 data-[pressed]:bg-secondary/25 text-foreground/40 data-[pressed]:text-foreground [&_svg:not([class*='size-'])]:size-4 rounded-sm";
+
+const alignmentIconClass = "size-4";
+
+const alignmentButtonIconWeight = "bold" as const;
 
 export interface PositionSettings {
   alignment: string;
@@ -53,10 +103,11 @@ interface PositionControlsProps {
   dragRef?: ConnectDragSource;
   artboardSettings?: ArtboardSettings;
   onArtboardChange?: (settings: ArtboardSettings) => void;
+  onPreviewUpdatingChange?: (isUpdating: boolean) => void;
   bed?: Bed;
 }
 
-export function PositionControls({ filename, onPathsUpdate, onError, initialDimensions, onSettingsChange, onDimensionsChange, optimizationMethod, dragRef, artboardSettings, onArtboardChange, bed }: PositionControlsProps) {
+export function PositionControls({ filename, onPathsUpdate, onError, initialDimensions, onSettingsChange, onDimensionsChange, optimizationMethod, dragRef, artboardSettings, onArtboardChange, onPreviewUpdatingChange, bed }: PositionControlsProps) {
   const [alignment, setAlignment] = useState<Alignment>('center');
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
@@ -69,6 +120,7 @@ export function PositionControls({ filename, onPathsUpdate, onError, initialDime
   const [targetWidth, setTargetWidth] = useState(100);
   const [targetHeight, setTargetHeight] = useState(100);
   const [dimensions, setDimensions] = useState<Dimensions | null>(initialDimensions || null);
+  const repositionRequestIdRef = useRef(0);
 
   useEffect(() => {
     if (initialDimensions) {
@@ -95,16 +147,13 @@ export function PositionControls({ filename, onPathsUpdate, onError, initialDime
       scale_value: scalePercent,
       target_width: targetWidth,
       target_height: targetHeight,
+      artboard_enabled: true,
+      artboard_width: artboardSettings?.width,
+      artboard_height: artboardSettings?.height,
     });
   }, []);
 
-  const handleReposition = async (options: {
-    newAlignment?: Alignment;
-    newScaleMode?: ScaleMode;
-    newScalePercent?: number;
-    newTargetWidth?: number;
-    newTargetHeight?: number;
-  } = {}) => {
+  const handleReposition = async (options: RepositionOptions = {}) => {
     if (!filename) return;
 
     const alignmentToUse = options.newAlignment ?? alignment;
@@ -112,6 +161,9 @@ export function PositionControls({ filename, onPathsUpdate, onError, initialDime
     const scalePercentToUse = options.newScalePercent ?? scalePercent;
     const targetWidthToUse = options.newTargetWidth ?? targetWidth;
     const targetHeightToUse = options.newTargetHeight ?? targetHeight;
+    const baseArtboard = options.nextArtboardSettings ?? artboardSettings;
+    if (!baseArtboard) return;
+    const artboardToUse = { ...baseArtboard, enabled: true };
 
     if (options.newAlignment) setAlignment(alignmentToUse);
     if (options.newScaleMode) setScaleMode(scaleModeToUse);
@@ -127,13 +179,15 @@ export function PositionControls({ filename, onPathsUpdate, onError, initialDime
       scale_value: scalePercentToUse,
       target_width: targetWidthToUse,
       target_height: targetHeightToUse,
-      artboard_enabled: artboardSettings?.enabled,
-      artboard_width: artboardSettings?.width,
-      artboard_height: artboardSettings?.height,
+      artboard_enabled: true,
+      artboard_width: artboardToUse?.width,
+      artboard_height: artboardToUse?.height,
     };
     onSettingsChange?.(newSettings);
 
+    const requestId = ++repositionRequestIdRef.current;
     setIsLoading(true);
+    onPreviewUpdatingChange?.(true);
     try {
       const result = await api.repositionSvg(filename, {
         alignment: alignmentToUse,
@@ -145,20 +199,31 @@ export function PositionControls({ filename, onPathsUpdate, onError, initialDime
         target_width: targetWidthToUse,
         target_height: targetHeightToUse,
         optimization_method: optimizationMethod,
-        artboard_enabled: artboardSettings?.enabled,
-        artboard_width: artboardSettings?.width,
-        artboard_height: artboardSettings?.height,
+        artboard_enabled: true,
+        artboard_width: artboardToUse?.width,
+        artboard_height: artboardToUse?.height,
       });
+      if (requestId !== repositionRequestIdRef.current) return;
       onPathsUpdate(result.paths);
       if (result.dimensions) {
         setDimensions(result.dimensions);
         onDimensionsChange?.(result.dimensions);
       }
     } catch (e) {
+      if (requestId !== repositionRequestIdRef.current) return;
       onError(e instanceof Error ? e.message : 'Failed to reposition');
     } finally {
-      setIsLoading(false);
+      if (requestId === repositionRequestIdRef.current) {
+        setIsLoading(false);
+        onPreviewUpdatingChange?.(false);
+      }
     }
+  };
+
+  const applyArtboardSettings = (nextArtboardSettings: ArtboardSettings) => {
+    const normalizedArtboardSettings = { ...nextArtboardSettings, enabled: true };
+    onArtboardChange?.(normalizedArtboardSettings);
+    void handleReposition({ nextArtboardSettings: normalizedArtboardSettings });
   };
 
   // Handle artboard preset change
@@ -166,16 +231,14 @@ export function PositionControls({ filename, onPathsUpdate, onError, initialDime
     if (!onArtboardChange || !artboardSettings) return;
 
     if (preset === 'custom') {
-      onArtboardChange({ ...artboardSettings, preset });
+      applyArtboardSettings({ ...artboardSettings, preset });
     } else {
       const presetData = ARTBOARD_PRESETS[preset];
       const isLandscape = artboardSettings.orientation === 'landscape';
       const width = isLandscape ? presetData.height : presetData.width;
       const height = isLandscape ? presetData.width : presetData.height;
-      onArtboardChange({ ...artboardSettings, preset, width, height });
+      applyArtboardSettings({ ...artboardSettings, preset, width, height });
     }
-    // Trigger reposition with new artboard size
-    setTimeout(() => handleReposition({}), 0);
   };
 
   // Handle artboard orientation toggle
@@ -191,129 +254,109 @@ export function PositionControls({ filename, onPathsUpdate, onError, initialDime
       return; // Don't allow flip if it exceeds bed
     }
 
-    onArtboardChange({ ...artboardSettings, orientation: newOrientation, width: newWidth, height: newHeight });
-    // Trigger reposition with new artboard size
-    setTimeout(() => handleReposition({}), 0);
-  };
-
-  // Handle artboard enable/disable
-  const handleArtboardToggle = () => {
-    if (!onArtboardChange || !artboardSettings) return;
-    const newEnabled = !artboardSettings.enabled;
-    onArtboardChange({ ...artboardSettings, enabled: newEnabled });
-    // Trigger reposition
-    setTimeout(() => handleReposition({}), 0);
+    applyArtboardSettings({ ...artboardSettings, orientation: newOrientation, width: newWidth, height: newHeight });
   };
 
   // Check if orientation flip is allowed
   const canFlipOrientation = bed && artboardSettings
     ? artboardSettings.height <= bed.width && artboardSettings.width <= bed.height
     : true;
+  const horizontalAlignment = getHorizontalAlignment(alignment);
+  const verticalAlignment = getVerticalAlignment(alignment);
 
-  if (!filename) return null;
+  if (!filename || !artboardSettings) return null;
 
   return (
     <SidebarPanel title="Position & Size" dragRef={dragRef}>
       <div className="flex flex-col gap-3 p-4">
         {/* Artboard Controls */}
-        <div className="border border-foreground/10 rounded p-3">
-          <div className="flex items-center justify-between mb-2">
+        <div className="mb-2">
+          <div className="mb-2">
             <label className="text-sm text-foreground/60">Artboard</label>
-            <Switch
-              aria-label="Artboard"
-              checked={Boolean(artboardSettings?.enabled)}
-              onCheckedChange={handleArtboardToggle}
-            />
           </div>
 
-          {artboardSettings?.enabled && (
-            <div className="space-y-2 mt-2">
-              {/* Preset selector */}
-              <ToggleGroup
-                value={[artboardSettings.preset]}
-                onValueChange={(value) => {
-                  const preset = value[0] as ArtboardPreset | undefined;
-                  if (preset) handleArtboardPresetChange(preset);
-                }}
-                className="flex-wrap justify-start"
-              >
+          <div className="space-y-2 mt-2">
+            {/* Preset selector */}
+            <Select
+              value={artboardSettings.preset}
+              onValueChange={(value) => handleArtboardPresetChange(value as ArtboardPreset)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
                 {ARTBOARD_PRESET_ORDER.map((preset) => (
-                  <ToggleGroupItem
-                    key={preset}
-                    value={preset}
-                    size="sm"
-                    className="flex-none"
-                  >
+                  <SelectItem key={preset} value={preset}>
                     {preset === 'custom' ? 'Custom' : ARTBOARD_PRESETS[preset].label}
-                  </ToggleGroupItem>
+                  </SelectItem>
                 ))}
-              </ToggleGroup>
+              </SelectContent>
+            </Select>
 
-              {/* Orientation toggle */}
-              <ToggleGroup
-                value={[artboardSettings.orientation]}
-                onValueChange={(value) => {
-                  const orientation = value[0];
-                  if (orientation && orientation !== artboardSettings.orientation) {
-                    handleOrientationToggle();
-                  }
-                }}
+            {/* Orientation toggle */}
+            <ToggleGroup
+              value={[artboardSettings.orientation]}
+              onValueChange={(value) => {
+                const orientation = value[0];
+                if (orientation && orientation !== artboardSettings.orientation) {
+                  handleOrientationToggle();
+                }
+              }}
+            >
+              <ToggleGroupItem value="portrait" size="sm">
+                Portrait
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="landscape"
+                size="sm"
+                disabled={!canFlipOrientation}
+                title={!canFlipOrientation ? 'Landscape orientation exceeds bed size' : ''}
               >
-                <ToggleGroupItem value="portrait" size="sm">
-                  Portrait
-                </ToggleGroupItem>
-                <ToggleGroupItem
-                  value="landscape"
-                  size="sm"
-                  disabled={!canFlipOrientation}
-                  title={!canFlipOrientation ? 'Landscape orientation exceeds bed size' : ''}
-                >
-                  Landscape
-                </ToggleGroupItem>
-              </ToggleGroup>
+                Landscape
+              </ToggleGroupItem>
+            </ToggleGroup>
 
-              {/* Custom dimensions */}
-              {artboardSettings.preset === 'custom' && (
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-sm text-foreground/40 mb-1 block">Width (mm)</label>
-                    <Input
-                      type="number"
-                      value={artboardSettings.width}
-                      onChange={(e) => {
-                        const newWidth = Math.min(Number(e.target.value), bed?.width || 426);
-                        onArtboardChange?.({ ...artboardSettings, width: newWidth });
-                      }}
-                      onBlur={() => handleReposition({})}
-                      min={10}
-                      max={bed?.width || 426}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-foreground/40 mb-1 block">Height (mm)</label>
-                    <Input
-                      type="number"
-                      value={artboardSettings.height}
-                      onChange={(e) => {
-                        const newHeight = Math.min(Number(e.target.value), bed?.height || 599);
-                        onArtboardChange?.({ ...artboardSettings, height: newHeight });
-                      }}
-                      onBlur={() => handleReposition({})}
-                      min={10}
-                      max={bed?.height || 599}
-                    />
-                  </div>
+            {/* Custom dimensions */}
+            {artboardSettings.preset === 'custom' && (
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-sm text-foreground/40 mb-1 block">Width (mm)</label>
+                  <Input
+                    type="number"
+                    value={artboardSettings.width}
+                    onChange={(e) => {
+                      const newWidth = Math.min(Number(e.target.value), bed?.width || 426);
+                      onArtboardChange?.({ ...artboardSettings, enabled: true, width: newWidth });
+                    }}
+                    onBlur={() => handleReposition({ nextArtboardSettings: artboardSettings })}
+                    min={10}
+                    max={bed?.width || 426}
+                  />
                 </div>
-              )}
+                <div>
+                  <label className="text-sm text-foreground/40 mb-1 block">Height (mm)</label>
+                  <Input
+                    type="number"
+                    value={artboardSettings.height}
+                    onChange={(e) => {
+                      const newHeight = Math.min(Number(e.target.value), bed?.height || 599);
+                      onArtboardChange?.({ ...artboardSettings, enabled: true, height: newHeight });
+                    }}
+                    onBlur={() => handleReposition({ nextArtboardSettings: artboardSettings })}
+                    min={10}
+                    max={bed?.height || 599}
+                  />
+                </div>
+              </div>
+            )}
 
-              {/* Size display for presets */}
-              {artboardSettings.preset !== 'custom' && (
-                <div className="text-sm text-foreground/40">
-                  {artboardSettings.width} × {artboardSettings.height} mm
-                </div>
-              )}
-            </div>
-          )}
+            {/* Size display for presets */}
+            {artboardSettings.preset !== 'custom' && (
+              <div className="text-sm text-foreground/40">
+                {artboardSettings.width} × {artboardSettings.height} mm
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Current Dimensions Display */}
@@ -410,29 +453,69 @@ export function PositionControls({ filename, onPathsUpdate, onError, initialDime
           </div>
         )}
 
-        {/* Alignment Grid */}
+        {/* Alignment Controls */}
         <div>
           <label className="text-sm text-foreground/60 mb-2 block">Alignment</label>
-          <ToggleGroup
-            value={[alignment]}
-            onValueChange={(value) => {
-              const nextAlignment = value[0] as Alignment | undefined;
-              if (nextAlignment) handleReposition({ newAlignment: nextAlignment });
-            }}
-            disabled={isLoading}
-            className="grid grid-cols-3"
-          >
-            {ALIGNMENT_ITEMS.map((item) => (
-              <ToggleGroupItem
-                key={item.value}
-                value={item.value}
-                aria-label={item.ariaLabel}
-                className="w-full"
-              >
-                {item.label}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
+          <div className="grid grid-cols-2 gap-1">
+            <ToggleGroup
+              value={horizontalAlignment ? [horizontalAlignment] : []}
+              onValueChange={(value) => {
+                const nextHorizontal = value[0] as HorizontalAlignment | undefined;
+                if (!nextHorizontal) return;
+                const nextVertical = verticalAlignment ?? 'center';
+                handleReposition({
+                  newAlignment: composeAlignment(nextHorizontal, nextVertical),
+                });
+              }}
+              disabled={isLoading}
+              className={alignmentSegmentGroupClass}
+            >
+              {HORIZONTAL_ALIGNMENT_ITEMS.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <ToggleGroupItem
+                    key={item.value}
+                    value={item.value}
+                    aria-label={item.ariaLabel}
+                    title={item.ariaLabel}
+                    className={alignmentSegmentClass}
+                    size="sm"
+                  >
+                    <Icon className={alignmentIconClass} weight={alignmentButtonIconWeight} />
+                  </ToggleGroupItem>
+                );
+              })}
+            </ToggleGroup>
+
+            <ToggleGroup
+              value={verticalAlignment ? [verticalAlignment] : []}
+              onValueChange={(value) => {
+                const nextVertical = value[0] as VerticalAlignment | undefined;
+                if (!nextVertical) return;
+                const nextHorizontal = horizontalAlignment ?? 'center';
+                handleReposition({
+                  newAlignment: composeAlignment(nextHorizontal, nextVertical),
+                });
+              }}
+              disabled={isLoading}
+              className={alignmentSegmentGroupClass}
+            >
+              {VERTICAL_ALIGNMENT_ITEMS.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <ToggleGroupItem
+                    key={item.value}
+                    value={item.value}
+                    aria-label={item.ariaLabel}
+                    title={item.ariaLabel}
+                    className={alignmentSegmentClass}
+                  >
+                    <Icon className={alignmentIconClass} weight={alignmentButtonIconWeight} />
+                  </ToggleGroupItem>
+                );
+              })}
+            </ToggleGroup>
+          </div>
         </div>
 
         {/* Margin */}

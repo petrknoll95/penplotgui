@@ -4,21 +4,16 @@ import { SidebarPanel } from '@/components/ui/sidebar-panel';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PathData, OptimizationMethod, OPTIMIZATION_METHODS } from '../types';
 import type { ConnectDragSource } from 'react-dnd';
+import type { PositionSettings } from './PositionControls';
 
 interface OptimizationControlsProps {
   filename: string | null;
-  currentSettings: {
-    alignment: string;
-    margin: number;
-    scale_mode: string;
-    scale_value: number;
-    target_width: number;
-    target_height: number;
-  };
+  currentSettings: PositionSettings;
   onPathsUpdate: (paths: PathData[]) => void;
   onError: (error: string) => void;
   optimizationMethod: OptimizationMethod;
   onMethodChange: (method: OptimizationMethod) => void;
+  onPreviewUpdatingChange?: (isUpdating: boolean) => void;
   dragRef?: ConnectDragSource;
 }
 
@@ -29,6 +24,7 @@ export function OptimizationControls({
   onError,
   optimizationMethod,
   onMethodChange,
+  onPreviewUpdatingChange,
   dragRef,
 }: OptimizationControlsProps) {
   const [isLoading, setIsLoading] = useState(false);
@@ -38,6 +34,7 @@ export function OptimizationControls({
 
     onMethodChange(newMethod);
     setIsLoading(true);
+    onPreviewUpdatingChange?.(true);
 
     try {
       const result = await api.repositionSvg(filename, {
@@ -49,6 +46,7 @@ export function OptimizationControls({
       onError(e instanceof Error ? e.message : 'Optimization failed');
     } finally {
       setIsLoading(false);
+      onPreviewUpdatingChange?.(false);
     }
   };
 

@@ -28,6 +28,13 @@ const defaultStatus: PlotterStatus = {
 const MAX_BED_WIDTH = 426;
 const MAX_BED_HEIGHT = 599;
 const defaultBed: Bed = { width: MAX_BED_WIDTH, height: MAX_BED_HEIGHT };
+const defaultArtboardSettings: ArtboardSettings = {
+  enabled: true,
+  preset: '36x48',
+  width: 360,
+  height: 480,
+  orientation: 'portrait',
+};
 
 function App() {
   const [paths, setPaths] = useState<PathData[]>([]);
@@ -36,6 +43,7 @@ function App() {
   const [status, setStatus] = useState<PlotterStatus>(defaultStatus);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPreviewUpdating, setIsPreviewUpdating] = useState(false);
   const [dimensions, setDimensions] = useState<Dimensions | undefined>(undefined);
 
   // Optimization state
@@ -47,16 +55,13 @@ function App() {
     scale_value: 100,
     target_width: 100,
     target_height: 100,
+    artboard_enabled: defaultArtboardSettings.enabled,
+    artboard_width: defaultArtboardSettings.width,
+    artboard_height: defaultArtboardSettings.height,
   });
 
   // Artboard state
-  const [artboardSettings, setArtboardSettings] = useState<ArtboardSettings>({
-    enabled: true,
-    preset: '36x48',
-    width: 360,
-    height: 480,
-    orientation: 'portrait',
-  });
+  const [artboardSettings, setArtboardSettings] = useState<ArtboardSettings>(defaultArtboardSettings);
 
   // Timeline preview state
   const [previewPosition, setPreviewPosition] = useState(0);
@@ -129,6 +134,7 @@ function App() {
   // File upload handler
   const handleFileSelect = useCallback(async (file: File) => {
     setIsLoading(true);
+    setIsPreviewUpdating(true);
     setError(null);
 
     try {
@@ -147,6 +153,7 @@ function App() {
       setError(e instanceof Error ? e.message : 'Upload failed');
     } finally {
       setIsLoading(false);
+      setIsPreviewUpdating(false);
     }
   }, []);
 
@@ -196,6 +203,7 @@ function App() {
         optimizationMethod={optimizationMethod}
         artboardSettings={artboardSettings}
         onArtboardChange={setArtboardSettings}
+        onPreviewUpdatingChange={setIsPreviewUpdating}
         bed={bed}
       />
     ),
@@ -207,6 +215,7 @@ function App() {
         onError={handleError}
         optimizationMethod={optimizationMethod}
         onMethodChange={setOptimizationMethod}
+        onPreviewUpdatingChange={setIsPreviewUpdating}
       />
     ),
     control: (
@@ -264,7 +273,7 @@ function App() {
       </Sidebar>
 
       {/* Main Content */}
-      <main className="relative min-w-0 w-full overflow-auto overscroll-none bg-[linear-gradient(rgba(20,20,20,1)_.1em,transparent_.1em),linear-gradient(90deg,rgba(20,20,20,1)_.1em,transparent_.1em)] bg-size-[0.5em_0.5em]">
+      <main className="relative min-w-0 w-full overflow-auto overscroll-none bg-[radial-gradient(circle_at_center,color-mix(in_oklch,var(--color-foreground)_10%,var(--color-background))_.075em,transparent_.075em)] bg-size-[1em_1em]">
         {/* Position Display */}
         <div className="absolute top-6 right-6 bg-card/90 backdrop-blur border border-foreground/10 rounded-lg px-4 py-2 font-mono text-sm z-10">
           <div className="flex gap-4">
@@ -294,6 +303,7 @@ function App() {
                 previewPosition={!isPlotting ? previewPosition : undefined}
                 dimensions={dimensions}
                 artboard={artboardSettings}
+                isUpdating={isPreviewUpdating || isLoading}
               />
 
               {/* Timeline Scrubber - only show when not actively plotting */}
