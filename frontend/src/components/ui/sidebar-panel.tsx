@@ -41,7 +41,7 @@ export function SidebarPanel({ title, children, defaultOpen = true, dragRef }: S
           />
         </Collapsible.Trigger>
       </div>
-      <Collapsible.Panel className="overflow-hidden data-[closed]:animate-collapse-up data-[open]:animate-collapse-down bg-[color-mix(in_oklch,var(--color-black)_5%,var(--color-card))]">
+      <Collapsible.Panel className="overflow-hidden data-closed:animate-collapse-up data-open:animate-collapse-down">
         {children}
       </Collapsible.Panel>
     </Collapsible.Root>
