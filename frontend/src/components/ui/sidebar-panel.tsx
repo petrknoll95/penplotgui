@@ -16,7 +16,7 @@ export function SidebarPanel({ title, children, defaultOpen = true, dragRef }: S
 
   return (
     <Collapsible.Root open={open} onOpenChange={setOpen} className="w-full flex flex-col divide-y divide-foreground/5">
-      <div className="flex w-full items-center border-b border-foreground/5 transition-colors bg-card hover:bg-[color-mix(in_oklch,var(--color-white)_5%,var(--color-card))] sticky top-0">
+      <div className="flex w-full items-center border-b border-foreground/5 transition-colors bg-card hover:bg-[color-mix(in_oklch,var(--color-white)_5%,var(--color-card))] sticky top-0 z-10">
         {dragRef && (
           <div
             ref={dragRef}
