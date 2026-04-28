@@ -26,7 +26,7 @@ flowchart LR
 
 | Layer | Files | Current responsibility |
 | --- | --- | --- |
-| Frontend | [`frontend/src/App.tsx`](../frontend/src/App.tsx), [`frontend/src/components/`](../frontend/src/components), [`frontend/src/api.ts`](../frontend/src/api.ts) | User workflow, SVG upload, preview rendering, positioning controls, optimization controls, plot controls, jog controls, settings, live status display. |
+| Frontend | [`frontend/src/App.tsx`](../frontend/src/App.tsx), [`frontend/src/components/`](../frontend/src/components), [`frontend/src/api.ts`](../frontend/src/api.ts) | User workflow, SVG upload, preview rendering, positioning controls, optimization controls, header plot actions, jog controls, settings dialog, live position display. |
 | Backend API | [`backend/main.py`](../backend/main.py), [`backend/config.py`](../backend/config.py) | FastAPI app, upload handling, profile persistence, request validation, REST endpoints, browser status WebSocket. |
 | SVG pipeline | [`backend/svg_processor.py`](../backend/svg_processor.py) | SVG parsing, plottable filtering, path sampling, simplification, scaling, path ordering, arc/Bezier/ellipse handling, G-code generation. |
 | Arduino bridge | [`backend/arduino_bridge.py`](../backend/arduino_bridge.py) | Async TCP connection to firmware, command streaming, ok/ready flow control, state/progress tracking, status broadcasting callback. |
@@ -53,7 +53,7 @@ flowchart LR
 
 ### Start Plot
 
-1. `ControlPanel` calls `POST /api/plotter/plot`.
+1. The `Start Plot` header button calls `POST /api/plotter/plot`.
 2. The backend runs `SVGProcessor.process_svg()` with the same positioning and optimization settings.
 3. The backend generates G-code and calls `ArduinoBridge.start_plot()`.
 4. `ArduinoBridge` strips comments/empty lines, enters `plotting`, and sends up to 8 lines ahead.
@@ -67,8 +67,14 @@ Manual controls are direct backend-to-firmware commands:
 - Jogging sends `G91`, `G1 <axis><distance> F<rapid>`, then `G90`.
 - Home sends `G28`.
 - Pen up/down sends `M5` and `M3`.
+- Stop sends the plotter stop endpoint.
+- Reset sends the plotter reset endpoint.
 - Set home sends `G92 X0 Y0` and then `M114`.
 - Soft limits can be disabled temporarily while the set-home modal is open.
+
+### Settings
+
+Settings are opened from the gear icon in the app header. The dialog edits backend soft-limit bed size and speed/easing settings. The same shared Base UI dialog primitive is used by the settings dialog and set-home modal.
 
 ## Runtime State
 
@@ -79,7 +85,7 @@ Manual controls are direct backend-to-firmware commands:
 | Active Arduino connection | Backend | In-memory singleton `arduino` in `backend/main.py`. |
 | Plot progress | Backend bridge | In-memory `PlotterStatus`. |
 | UI selection and preview | Frontend | React state in `App`. |
-| Sidebar panel order | Frontend | Browser `localStorage` key `sidebar-panel-order`. |
+| Sidebar panel order | Frontend | Browser `localStorage` keys `sidebar-prepare-panel-order` and `sidebar-machine-panel-order`; legacy `sidebar-panel-order` is read for migration. |
 | Current machine position | Firmware | Volatile RAM fields `currentX`, `currentY`, `currentZ`. |
 | Soft limit/easing settings | Firmware | Volatile RAM, updated by `$LIMITS`, `$SOFTLIMITS`, `$EASING`. |
 

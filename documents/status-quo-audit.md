@@ -28,15 +28,17 @@ These are current behaviors that other layers already depend on:
 | Soft-limit clamp model | UI settings and firmware config commands assume clamped software bounds, not hardware limit switches. |
 | Servo pen commands `M3`/`M5` | Backend-generated G-code and manual UI controls use these commands. |
 
-## Current Documentation Mismatches
+## Historical Documentation Mismatches Now Reconciled
 
-| Existing claim | Current source status |
+These claims existed in older docs or planning notes and are now called out here so they do not quietly re-enter the codebase:
+
+| Older claim | Current source status |
 | --- | --- |
-| README says frontend runs at `localhost:3000`. | Vite config and `dev.sh` use `9999`. |
-| README and original planning notes mention `vpype` or `vpype-gcode`. | Backend uses `svgpathtools` and custom G-code generation. |
-| README and original planning notes mention MobaTools stepper control. | Firmware uses direct `digitalWrite()` step/dir pulses and `Servo`. |
+| Frontend runs at `localhost:3000`. | Vite config and `dev.sh` use `9999`. |
+| SVG conversion uses `vpype` or `vpype-gcode`. | Backend uses `svgpathtools` and custom G-code generation. |
+| Firmware motion uses MobaTools stepper control. | Firmware uses direct `digitalWrite()` step/dir pulses and `Servo`. |
 | Some source comments and older wording call the Arduino transport WebSocket. | Firmware uses raw `WiFiServer`/`WiFiClient`; backend uses `asyncio.open_connection`. |
-| README G-code table lists only basic commands. | Firmware also supports `G2`, `G3`, `G5`, `G6`, `G92`, `$LIMITS`, `$STEPS`, `$EASING`, `$SOFTLIMITS`, `RESET`, `TEST`, and `TESTY`. |
+| G-code table lists only basic commands. | Firmware also supports `G2`, `G3`, `G5`, `G6`, `G92`, `$LIMITS`, `$STEPS`, `$EASING`, `$SOFTLIMITS`, `RESET`, `TEST`, and `TESTY`. |
 
 ## Security And Safety Observations
 
@@ -72,7 +74,9 @@ These are current behaviors that other layers already depend on:
 
 - The UI is a real control dashboard with no landing page.
 - Design tokens live in `frontend/src/index.css`.
-- Sidebar panel order persists to `localStorage`.
+- The app header contains live X/Y/Z readouts, a status-aware connect/disconnect button with tooltip disclosure, test/start plot actions, and the settings dialog trigger.
+- The settings UI is a header-triggered dialog; the right sidebar currently contains only Manual Control.
+- Sidebar panel order persists to `localStorage` using separate prepare and machine keys, with a legacy key still read for migration.
 - WebSocket close/error events are logged but not shown as the main error banner.
 - There is no reconnect strategy for the browser WebSocket.
 - Timeline preview advances by path index, not by distance or actual G-code execution.

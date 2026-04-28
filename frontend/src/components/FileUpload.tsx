@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
@@ -40,7 +41,7 @@ export function FileUpload({ onFileSelect, isLoading, hasFile }: FileUploadProps
         variant="outline"
         onClick={handleClick}
         disabled={isLoading}
-        className="w-full"
+        className={cn("w-full", isLoading && "shimmer shimmer-bg")}
       >
         {isLoading ? 'Processing...' : hasFile ? 'Replace SVG' : 'Upload SVG'}
       </Button>

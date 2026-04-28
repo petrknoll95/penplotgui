@@ -34,10 +34,11 @@ flowchart TD
 
 The frontend is an operator dashboard:
 
-- Keep upload, preview, positioning, optimization, control, jog, and settings workflows on one screen.
+- Keep upload, preview, positioning, optimization, header plot actions, manual jogging, and settings access in one operational screen.
 - Keep preview and plot settings aligned so the plotted output matches what the operator saw.
 - Preserve bottom-left plotter coordinates in the preview.
-- Keep sidebar panels collapsible and reorderable; panel order is stored in browser `localStorage`.
+- Keep setup and machine sidebars separate; setup panels remain collapsible/reorderable and machine controls stay focused on manual motion.
+- Keep settings in a header-triggered dialog instead of consuming right-sidebar space.
 
 Important docs:
 

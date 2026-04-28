@@ -22,7 +22,7 @@ This folder documents the current repository as observed in source. It is intend
 
 `penplotgui` is a three-layer pen plotter control system:
 
-1. A Vite/React/TypeScript frontend in [`frontend/`](../frontend) provides SVG upload, preview, positioning, path optimization selection, plotter controls, jogging, settings, and a timeline scrubber.
+1. A Vite/React/TypeScript frontend in [`frontend/`](../frontend) provides SVG upload, preview, positioning, path optimization selection, header plot actions, manual jogging, a settings dialog, and a timeline scrubber.
 2. A FastAPI backend in [`backend/`](../backend) receives SVG files, uses `svgpathtools` and custom geometry logic to produce preview paths and G-code, persists plotter profiles, and streams commands to the plotter.
 3. Arduino UNO R4 WiFi firmware in [`firmware/penplotter/`](../firmware/penplotter) parses a compact G-code dialect and directly drives CNC Shield pins for X/Y motion plus a servo pen lift.
 

@@ -1,76 +1,58 @@
 # Pen Plotter Control System
 
-A web-based pen plotter control system with three components:
-- **React Frontend** - SVG upload, path visualization, real-time plotter control
-- **Python Backend (FastAPI)** - vpype-based SVG→G-code conversion, WebSocket bridge
-- **Arduino R4 WiFi Firmware** - G-code parser, Bresenham motion planner, stepper control
+`penplotgui` is a local control system for a pen plotter. It combines a React operator dashboard, a FastAPI SVG/G-code backend, and Arduino UNO R4 WiFi firmware that drives CNC Shield step/dir pins and a servo pen lift.
+
+The detailed status-quo documentation lives in [`documents/`](documents/). Start with [`documents/README.md`](documents/README.md) for the full document map.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                   React + TypeScript Frontend                   │
-│  SVG Upload │ Path Preview │ Plotter Control │ Configuration   │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │ REST + WebSocket
-┌─────────────────────────▼───────────────────────────────────────┐
-│                    FastAPI Backend (Python)                     │
-│  vpype integration │ WebSocket bridge │ Profile management      │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │ TCP Socket (ok-based flow control)
-┌─────────────────────────▼───────────────────────────────────────┐
-│                    Arduino R4 WiFi Firmware                     │
-│  G-code Parser │ Bresenham Interpolation │ MobaTools Steppers  │
-└─────────────────────────────────────────────────────────────────┘
+```text
+Browser operator UI
+  -> React + TypeScript frontend on Vite
+  -> FastAPI backend over /api and /api/ws
+  -> Arduino bridge over raw newline-delimited TCP
+  -> Arduino UNO R4 WiFi firmware
+  -> CNC Shield steppers and pen servo
 ```
 
-## Hardware Requirements
+Current implementation facts:
 
-- Arduino Uno R4 WiFi
-- CNC Shield v3
-- NEMA 17 stepper motors (X, Y axes)
-- Servo or small stepper for Z (pen lift)
+- Frontend dev server: `http://localhost:9999`.
+- Backend API: `http://localhost:8000`.
+- Firmware line server: TCP port `81`.
+- SVG processing: custom `svgpathtools`/NumPy pipeline in [`backend/svg_processor.py`](backend/svg_processor.py).
+- Firmware motion: direct GPIO step/dir pulses in [`firmware/penplotter/`](firmware/penplotter), plus `Servo` for pen up/down.
+
+## User Interface
+
+The frontend is the working tool, not a landing page:
+
+- Header: live X/Y/Z readouts, status-aware `Connect`/`Disconnect` button with tooltip, `Test`, `Start Plot`, and settings dialog trigger.
+- Left sidebar: SVG upload, artboard/position/scale controls, and path optimization.
+- Main canvas: bed/artboard/path preview with timeline scrubber.
+- Right sidebar: manual jog controls, pen up/down, stop/reset, home all axes, and set-home workflow.
+- Settings dialog: bed soft limits, rapid/draw speeds, and easing.
 
 ## Setup
 
-### 1. Arduino Firmware
-
-1. Install the Arduino IDE and add support for Arduino R4 WiFi
-2. Install the MobaTools library (v2.6.2+) via Library Manager
-3. Open `firmware/penplotter/penplotter.ino`
-4. Update WiFi credentials:
-   ```cpp
-   const char* WIFI_SSID = "YOUR_WIFI_SSID";
-   const char* WIFI_PASS = "YOUR_WIFI_PASSWORD";
-   ```
-5. Upload to your Arduino R4 WiFi
-6. Note the IP address printed to Serial Monitor
-
-### 2. Python Backend
+### Backend
 
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
-```
-
-Update `config.py` with your Arduino's IP address:
-```python
-arduino_host: str = "192.168.1.100"  # Your Arduino's IP
-```
-
-Run the backend:
-```bash
 python main.py
 ```
 
-Or with uvicorn:
+The backend reads `PLOTTER_` environment variables. Common examples:
+
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+export PLOTTER_ARDUINO_HOST=192.168.1.46
+export PLOTTER_ARDUINO_PORT=81
 ```
 
-### 3. React Frontend
+### Frontend
 
 ```bash
 cd frontend
@@ -78,81 +60,53 @@ npm install
 npm run dev
 ```
 
-The frontend will be available at http://localhost:3000
+Open `http://localhost:9999`.
 
-## Usage
+### Combined Dev Script
 
-1. Open http://localhost:3000 in your browser
-2. Click "Connect" to connect to the plotter
-3. Upload an SVG file using drag-drop or file picker
-4. Preview the paths (blue = drawing paths, dashed gray = travel moves)
-5. Click "Start Plot" to begin plotting
-
-## G-code Commands
-
-The firmware supports the following G-code subset:
-
-| Command | Description |
-|---------|-------------|
-| G0 | Rapid move |
-| G1 | Linear interpolated move |
-| G28 | Home axes |
-| G90 | Absolute positioning |
-| G91 | Relative positioning |
-| M3 | Pen down |
-| M5 | Pen up |
-| M114 | Report position |
-
-Special commands:
-- `!` or `STOP` - Emergency stop
-- `PAUSE` - Pause plotting
-- `~` or `RESUME` - Resume plotting
-- `STATUS` - Report status
-
-## Configuration
-
-Plotter profiles can be configured via the API:
-
-```json
-{
-  "name": "default",
-  "bed_width": 200.0,
-  "bed_height": 200.0,
-  "rapid_feed_rate": 3000.0,
-  "draw_feed_rate": 1000.0,
-  "pen_up_height": 5.0,
-  "pen_down_height": 0.0,
-  "steps_per_mm_x": 80.0,
-  "steps_per_mm_y": 80.0,
-  "steps_per_mm_z": 400.0
-}
+```bash
+./dev.sh
 ```
 
-## CNC Shield Pin Mapping
+This expects `backend/venv` and `frontend/node_modules` to already exist.
 
-| Function | Pin |
-|----------|-----|
-| X Step | D2 |
-| X Dir | D5 |
-| Y Step | D3 |
-| Y Dir | D6 |
-| Z Step | D4 |
-| Z Dir | D7 |
-| Enable | D8 |
+### Firmware
 
-## Troubleshooting
+Open [`firmware/penplotter/penplotter.ino`](firmware/penplotter/penplotter.ino) in the Arduino IDE or an equivalent Arduino CLI setup for Arduino UNO R4 WiFi.
 
-**Arduino won't connect to WiFi:**
-- Check credentials in the firmware
-- Ensure your WiFi is 2.4GHz (R4 WiFi doesn't support 5GHz)
-- Check Serial Monitor for connection status
+The firmware uses `WiFiS3.h`, `Servo.h`, and local sketch headers. It currently contains local Wi-Fi credentials in source; replace those with your own local values before flashing or sharing firmware externally.
 
-**Motors don't move:**
-- Check CNC Shield is properly seated
-- Verify Enable pin (D8) is set LOW
-- Check stepper driver modules are installed correctly
+## Common Workflow
 
-**Backend can't connect to Arduino:**
-- Verify Arduino IP address in backend config
-- Ensure Arduino and backend are on the same network
-- Check that port 81 is not blocked by firewall
+1. Start the backend and frontend.
+2. Flash/start the Arduino firmware and confirm its IP address.
+3. Open `http://localhost:9999`.
+4. Connect to the plotter from the header.
+5. Upload an SVG.
+6. Choose artboard, alignment, scale, and optimization settings.
+7. Use preview and timeline scrubber to inspect paths.
+8. Run `Test` or `Start Plot`.
+
+## Documentation
+
+| Document | Purpose |
+| --- | --- |
+| [`documents/architecture.md`](documents/architecture.md) | Runtime layers, flows, state, and protocol boundaries. |
+| [`documents/frontend.md`](documents/frontend.md) | React UI structure, state model, components, persistence, and design system. |
+| [`documents/backend-api.md`](documents/backend-api.md) | FastAPI endpoints, request models, profiles, settings, and bridge behavior. |
+| [`documents/svg-processing.md`](documents/svg-processing.md) | SVG parsing, placement, optimization, and G-code generation. |
+| [`documents/firmware.md`](documents/firmware.md) | Firmware structure, parser, command set, and Wi-Fi/serial transport. |
+| [`documents/hardware-motion.md`](documents/hardware-motion.md) | Pin map, coordinate model, stepper control, soft limits, and motion behavior. |
+| [`documents/development.md`](documents/development.md) | Local setup, commands, runtime files, and verification notes. |
+| [`documents/status-quo-audit.md`](documents/status-quo-audit.md) | Current foundations, risks, mismatches, and improvement candidates. |
+
+## Verification
+
+No automated test suite or CI workflow is currently tracked. The main lightweight frontend check is:
+
+```bash
+cd frontend
+npm run build
+```
+
+Backend and firmware verification are currently manual; see [`documents/development.md`](documents/development.md).
