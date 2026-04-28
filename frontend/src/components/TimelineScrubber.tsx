@@ -117,9 +117,9 @@ export function TimelineScrubber({
   }, [paths]);
 
   return (
-    <div className="fixed bottom-0 left-0 right-80 border-t border-foreground/5 bg-background">
+    <div className="sticky bottom-0 z-10 border-t border-foreground/5 bg-card">
       {/* Stats row */}
-      <div className="flex items-center justify-between px-4 py-2 text-xs text-muted-foreground border-b border-foreground/5">
+      <div className="flex items-center justify-between px-4 py-2 text-sm text-muted-foreground border-b border-foreground/5">
         <span>{paths.length} paths | Bed: {bed.width}x{bed.height}mm</span>
         <div className="flex gap-6">
           <span>
@@ -184,7 +184,7 @@ export function TimelineScrubber({
           />
         </div>
 
-        <span className="text-xs text-muted-foreground whitespace-nowrap">
+        <span className="text-sm text-muted-foreground whitespace-nowrap">
           {currentPosition} / {totalPaths}
         </span>
 

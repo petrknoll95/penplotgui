@@ -1,14 +1,19 @@
 import * as React from "react"
+import { Input as BaseInput } from "@base-ui/react/input"
 
 import { cn } from "@/lib/utils"
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+function Input({
+  className,
+  type,
+  ...props
+}: React.ComponentProps<typeof BaseInput>) {
   return (
-    <input
+    <BaseInput
       type={type}
       data-slot="input"
       className={cn(
-        "flex h-(--button-height) w-full bg-button-bg-idle text-button-text-idle hover:bg-button-bg-hover disabled:bg-button-bg-idle disabled:text-button-text-idle px-2.5 py-1 text-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:bg-button-bg-active focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50",
+        "flex h-(--button-height) w-full rounded-md border border-input bg-button-bg-idle px-2.5 py-1 text-sm text-button-text-idle transition-colors placeholder:text-muted-foreground hover:bg-button-bg-hover focus-visible:bg-button-bg-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/45 disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
       {...props}

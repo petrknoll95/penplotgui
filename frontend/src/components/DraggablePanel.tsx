@@ -9,6 +9,7 @@ const PANEL_TYPE = 'SIDEBAR_PANEL'
 interface DragItem {
   index: number
   id: string
+  group: string
   type: string
   initialX: number
   width: number
@@ -18,6 +19,7 @@ interface DragItem {
 interface DraggablePanelProps {
   id: string
   index: number
+  group: string
   title: string
   children: React.ReactElement
   onReorder: (fromIndex: number, toIndex: number) => void
@@ -58,7 +60,7 @@ export function PanelDragLayer() {
           <div className="flex items-center justify-center px-2 py-4 cursor-grabbing text-foreground/60">
             <DotsSixVertical weight="bold" className="size-4" />
           </div>
-          <div className="flex flex-1 items-center justify-between text-xs font-medium py-4 pr-4">
+          <div className="flex flex-1 items-center justify-between text-sm font-medium py-4 pr-4">
             <span>{item.title}</span>
             <CaretDown weight="bold" className="size-3 text-foreground/60" />
           </div>
@@ -68,7 +70,7 @@ export function PanelDragLayer() {
   )
 }
 
-export function DraggablePanel({ id, index, title, children, onReorder }: DraggablePanelProps) {
+export function DraggablePanel({ id, index, group, title, children, onReorder }: DraggablePanelProps) {
   const ref = useRef<HTMLDivElement>(null)
 
   const [{ handlerId }, drop] = useDrop<DragItem, void, { handlerId: Identifier | null }>({
@@ -79,6 +81,10 @@ export function DraggablePanel({ id, index, title, children, onReorder }: Dragga
       }
     },
     hover(item: DragItem, monitor) {
+      if (item.group !== group) {
+        return
+      }
+
       if (!ref.current) {
         return
       }
@@ -134,6 +140,7 @@ export function DraggablePanel({ id, index, title, children, onReorder }: Dragga
       return {
         id,
         index,
+        group,
         title,
         initialX: rect?.left ?? 0,
         width: rect?.width ?? 320,

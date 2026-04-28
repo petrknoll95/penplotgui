@@ -9,11 +9,11 @@ import { Settings } from './components/Settings';
 import { PositionControls, PositionSettings } from './components/PositionControls';
 import { OptimizationControls } from './components/OptimizationControls';
 import { Sidebar } from './components/Sidebar';
-import { DraggablePanel } from './components/DraggablePanel';
+import { DraggablePanel, PanelDragLayer } from './components/DraggablePanel';
 import { api, createWebSocket } from './api';
 import { PathData, Bed, PlotterStatus, Dimensions, OptimizationMethod, ArtboardSettings } from './types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { usePanelOrder } from './hooks/usePanelOrder';
+import { usePanelOrder, type PanelGroup } from './hooks/usePanelOrder';
 
 const defaultStatus: PlotterStatus = {
   state: 'disconnected',
@@ -172,7 +172,7 @@ function App() {
   const isConnected = status.state !== 'disconnected' && status.state !== 'connecting';
   const isPlotting = status.state === 'plotting' || status.state === 'paused';
 
-  const { order, reorder } = usePanelOrder();
+  const { orders, reorder } = usePanelOrder();
 
   // Panel titles for drag preview
   const panelTitles: Record<string, string> = {
@@ -236,10 +236,35 @@ function App() {
     ),
   };
 
+  const renderPanelGroup = (group: PanelGroup) =>
+    orders[group].map((panelId, index) => {
+      const panel = panels[panelId];
+      if (!panel) return null;
+      return (
+        <DraggablePanel
+          key={panelId}
+          id={panelId}
+          group={group}
+          index={index}
+          title={panelTitles[panelId]}
+          onReorder={(fromIndex, toIndex) => reorder(group, fromIndex, toIndex)}
+        >
+          {panel}
+        </DraggablePanel>
+      );
+    });
+
   return (
-    <div className="h-screen bg-[rgba(12,12,12,1)] grid grid-cols-[1fr_320px]">
+    <div className="h-screen overflow-hidden bg-[rgba(12,12,12,1)] grid grid-cols-[320px_minmax(0,1fr)_320px]">
+      <PanelDragLayer />
+
+      <Sidebar side="left">
+        <FileUpload onFileSelect={handleFileSelect} isLoading={isLoading} hasFile={paths.length > 0} />
+        {renderPanelGroup('prepare')}
+      </Sidebar>
+
       {/* Main Content */}
-      <main className="relative w-full p-6 overflow-auto bg-[linear-gradient(rgba(20,20,20,1)_.1em,transparent_.1em),linear-gradient(90deg,rgba(20,20,20,1)_.1em,transparent_.1em)] bg-size-[0.5em_0.5em]">
+      <main className="relative min-w-0 w-full overflow-auto overscroll-none bg-[linear-gradient(rgba(20,20,20,1)_.1em,transparent_.1em),linear-gradient(90deg,rgba(20,20,20,1)_.1em,transparent_.1em)] bg-size-[0.5em_0.5em]">
         {/* Position Display */}
         <div className="absolute top-6 right-6 bg-card/90 backdrop-blur border border-foreground/10 rounded-lg px-4 py-2 font-mono text-sm z-10">
           <div className="flex gap-4">
@@ -292,26 +317,8 @@ function App() {
         </div>
       </main>
 
-      <Sidebar>
-        {/* FileUpload stays fixed at top */}
-        <FileUpload onFileSelect={handleFileSelect} isLoading={isLoading} hasFile={paths.length > 0} />
-
-        {/* Draggable panels */}
-        {order.map((panelId, index) => {
-          const panel = panels[panelId];
-          if (!panel) return null;
-          return (
-            <DraggablePanel
-              key={panelId}
-              id={panelId}
-              index={index}
-              title={panelTitles[panelId]}
-              onReorder={reorder}
-            >
-              {panel}
-            </DraggablePanel>
-          );
-        })}
+      <Sidebar side="right">
+        {renderPanelGroup('machine')}
       </Sidebar>
 
       {/* Set Home Modal */}

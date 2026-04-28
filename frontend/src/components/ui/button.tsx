@@ -1,24 +1,39 @@
 import * as React from "react"
+import { Button as BaseButton } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
-import { Slot } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "font-mono uppercase focus-visible:ring-ring/50 bg-clip-padding text-sm font-medium focus-visible:ring-3 aria-invalid:ring-3 [&_svg:not([class*='size-'])]:size-3.5 group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap transition-all outline-none select-none disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 h-(--button-height) gap-1 px-3 has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5",
+  "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border text-sm font-medium whitespace-nowrap transition-colors outline-none select-none focus-visible:ring-2 focus-visible:ring-ring/55 active:translate-y-px data-[disabled]:pointer-events-none data-[disabled]:opacity-45 disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "bg-button-bg-idle text-button-text-idle hover:bg-button-bg-hover disabled:bg-button-bg-idle disabled:text-button-text-idle aria-pressed:bg-button-bg-active",
-        outline: "bg-transparent shadow-[0_0_0_1px_var(--color-button-border-idle)_inset] hover:shadow-[0_0_0_0px_var(--color-button-border-hover)_inset] hover:bg-button-bg-hover aria-expanded:bg-muted aria-expanded:text-foreground aria-pressed:bg-button-bg-active",
-        secondary: "bg-[rgba(50,50,50,1)] text-foreground hover:bg-[rgba(60,60,60,1)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
-        ghost: "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground",
-        destructive: "bg-red-500/10 hover:bg-red-500/20 focus-visible:ring-red-500/20 text-red-500",
-        link: "text-primary underline-offset-4 hover:underline",
+        default: "border-primary/70 bg-primary text-primary-foreground hover:bg-primary/90",
+        outline:
+          "border-button-border-idle bg-button-bg-idle text-button-text-idle hover:border-button-border-hover hover:bg-button-bg-hover hover:text-button-text-hover data-[popup-open]:bg-button-bg-active",
+        secondary:
+          "border-secondary bg-secondary text-secondary-foreground hover:bg-secondary/85",
+        ghost:
+          "border-transparent bg-transparent text-foreground/75 hover:bg-muted hover:text-foreground",
+        destructive:
+          "border-destructive/35 bg-destructive/16 text-destructive-foreground hover:bg-destructive/24 focus-visible:ring-destructive/35",
+        link: "border-transparent bg-transparent text-primary underline-offset-4 hover:underline",
+      },
+      size: {
+        default: "h-8 px-3",
+        xs: "h-6 rounded-sm px-2 text-sm [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-7 rounded-md px-2.5 text-sm [&_svg:not([class*='size-'])]:size-3.5",
+        lg: "h-9 px-3.5",
+        icon: "size-8",
+        "icon-xs": "size-6 rounded-sm [&_svg:not([class*='size-'])]:size-3",
+        "icon-sm": "size-7 rounded-md",
+        "icon-lg": "size-9",
       },
     },
     defaultVariants: {
       variant: "default",
+      size: "default",
     },
   }
 )
@@ -26,19 +41,15 @@ const buttonVariants = cva(
 function Button({
   className,
   variant = "default",
-  asChild = false,
+  size = "default",
   ...props
-}: React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
-  }) {
-  const Comp = asChild ? Slot.Root : "button"
-
+}: React.ComponentProps<typeof BaseButton> & VariantProps<typeof buttonVariants>) {
   return (
-    <Comp
+    <BaseButton
       data-slot="button"
       data-variant={variant}
-      className={cn(buttonVariants({ variant, className }))}
+      data-size={size}
+      className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />
   )

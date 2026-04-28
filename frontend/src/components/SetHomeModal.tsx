@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 interface SetHomeModalProps {
   isOpen: boolean;
@@ -55,17 +57,22 @@ export function SetHomeModal({ isOpen, onClose, onError, currentPosition }: SetH
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-      <div className="bg-card border border-foreground/10 rounded-lg p-6 w-[360px] shadow-xl">
-        <h2 className="text-lg font-semibold mb-4">Set Home Position</h2>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          void handleCancel();
+        }
+      }}
+    >
+      <DialogContent>
+        <DialogTitle className="mb-4">Set Home Position</DialogTitle>
 
-        <p className="text-sm text-muted-foreground mb-4">
+        <DialogDescription className="mb-4">
           Use the jog controls to move to the desired home position.
           Soft limits are disabled - be careful not to crash the machine.
-        </p>
+        </DialogDescription>
 
         {/* Current Position */}
         <div className="bg-background/50 rounded px-3 py-2 mb-4 font-mono text-sm">
@@ -75,18 +82,24 @@ export function SetHomeModal({ isOpen, onClose, onError, currentPosition }: SetH
         </div>
 
         {/* Jog Distance Selection */}
-        <div className="flex gap-2 mb-4">
+        <ToggleGroup
+          value={[jogDistance.toString()]}
+          onValueChange={(value) => {
+            const nextDistance = Number(value[0]);
+            if (nextDistance > 0) setJogDistance(nextDistance);
+          }}
+          className="mb-4"
+        >
           {[1, 10, 50, 100].map((dist) => (
-            <Button
+            <ToggleGroupItem
               key={dist}
-              variant={jogDistance === dist ? "default" : "outline"}
+              value={dist.toString()}
               size="sm"
-              onClick={() => setJogDistance(dist)}
             >
               {dist}mm
-            </Button>
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
 
         {/* XY Jog Pad */}
         <div className="grid grid-cols-3 gap-1 mb-4">
@@ -110,7 +123,7 @@ export function SetHomeModal({ isOpen, onClose, onError, currentPosition }: SetH
             Set as Home (0,0)
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -80,144 +80,146 @@ export function SvgPreview({ paths, bed, filename, currentPosition, progress = 0
   }, [paths, completedPaths]);
 
   return (
-    <div className="bg-[rgba(20,20,20,1)] border border-[rgba(30,30,30,1)]">
-      <div className="px-4 py-2 border-b border-[rgba(30,30,30,1)] text-xs text-muted-foreground">
-        {filename}
-      </div>
-      <svg
+    <div className="p-4">
+      <div className="bg-[rgba(20,20,20,1)] border border-[rgba(30,30,30,1)]">
+        <div className="px-4 py-2 border-b border-[rgba(30,30,30,1)] text-sm text-muted-foreground">
+          {filename}
+        </div>
+        <svg
           viewBox={viewBox}
           className="w-full h-auto max-h-screen"
         >
           {/* Flip Y-axis so 0,0 is bottom-left like the plotter */}
           <g transform={`translate(0, ${bed.height}) scale(1, -1)`}>
-          {/* Bed outline */}
-          <rect
-            x={0}
-            y={0}
-            width={bed.width}
-            height={bed.height}
-            fill="none"
-            stroke="#ccc"
-            strokeWidth="1"
-            strokeDasharray="2 4"
-            vectorEffect="non-scaling-stroke"
-          />
-
-          {/* Artboard outline */}
-          {artboard?.enabled && (
+            {/* Bed outline */}
             <rect
               x={0}
               y={0}
-              width={artboard.width}
-              height={artboard.height}
+              width={bed.width}
+              height={bed.height}
               fill="none"
-              stroke="#3b82f6"
+              stroke="#ccc"
               strokeWidth="1"
-              strokeDasharray="4 2"
+              strokeDasharray="2 4"
               vectorEffect="non-scaling-stroke"
             />
-          )}
 
-          {/* SVG canvas outline */}
-          {dimensions && (
-            <rect
-              x={dimensions.offset_x}
-              y={dimensions.offset_y}
-              width={dimensions.width}
-              height={dimensions.height}
-              fill="none"
-              stroke="#f59e0b"
-              strokeWidth="1"
-              vectorEffect="non-scaling-stroke"
-              opacity={0.6}
-            />
-          )}
-
-          {/* Travel paths (pen up) - show all, highlight completed */}
-          {travelPaths.map((travel, idx) => (
-            <line
-              key={`travel-${idx}`}
-              x1={travel.from.x}
-              y1={travel.from.y}
-              x2={travel.to.x}
-              y2={travel.to.y}
-              stroke={travel.completed ? '#f97316' : '#d1d5db'}
-              strokeWidth="1"
-              strokeDasharray="2 2"
-              opacity={travel.completed ? 0.8 : 0.4}
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
-
-          {/* Future travel paths (not yet shown in travelPaths) */}
-          {paths.slice(completedPaths > 0 ? completedPaths - 1 : 0).map((path, relIdx) => {
-            const idx = (completedPaths > 0 ? completedPaths - 1 : 0) + relIdx;
-            const nextPath = paths[idx + 1];
-            if (!nextPath || idx < completedPaths - 1) return null;
-
-            const lastPoint = path.points[path.points.length - 1];
-            const firstPoint = nextPath.points[0];
-            if (!lastPoint || !firstPoint) return null;
-
-            return (
-              <line
-                key={`future-travel-${idx}`}
-                x1={lastPoint.x}
-                y1={lastPoint.y}
-                x2={firstPoint.x}
-                y2={firstPoint.y}
-                stroke="#d1d5db"
-                strokeWidth={0.3}
-                strokeDasharray="2 2"
-                opacity={0.4}
-                vectorEffect="non-scaling-stroke"
-              />
-            );
-          })}
-
-          {/* Drawing paths */}
-          {paths.map((path, pathIndex) => {
-            const isComplete = pathIndex < completedPaths;
-            const points = path.points.map((p) => `${p.x},${p.y}`).join(' ');
-
-            return (
-              <polyline
-                key={pathIndex}
-                points={points}
+            {/* Artboard outline */}
+            {artboard?.enabled && (
+              <rect
+                x={0}
+                y={0}
+                width={artboard.width}
+                height={artboard.height}
                 fill="none"
-                stroke={isComplete ? '#22c55e' : '#3b82f6'}
+                stroke="#3b82f6"
                 strokeWidth="1"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                opacity={isComplete ? 1 : 0.6}
+                strokeDasharray="4 2"
                 vectorEffect="non-scaling-stroke"
               />
-            );
-          })}
+            )}
 
-          {/* Current position indicator (from plotter) */}
-          {currentPosition && (
-            <g transform={`translate(${currentPosition.x}, ${currentPosition.y})`}>
-              <circle r={2} fill="#ef4444" vectorEffect="non-scaling-stroke" />
-              <circle r={4} fill="none" stroke="#ef4444" strokeWidth={0.5} vectorEffect="non-scaling-stroke" />
+            {/* SVG canvas outline */}
+            {dimensions && (
+              <rect
+                x={dimensions.offset_x}
+                y={dimensions.offset_y}
+                width={dimensions.width}
+                height={dimensions.height}
+                fill="none"
+                stroke="#f59e0b"
+                strokeWidth="1"
+                vectorEffect="non-scaling-stroke"
+                opacity={0.6}
+              />
+            )}
+
+            {/* Travel paths (pen up) - show all, highlight completed */}
+            {travelPaths.map((travel, idx) => (
+              <line
+                key={`travel-${idx}`}
+                x1={travel.from.x}
+                y1={travel.from.y}
+                x2={travel.to.x}
+                y2={travel.to.y}
+                stroke={travel.completed ? '#f97316' : '#d1d5db'}
+                strokeWidth="1"
+                strokeDasharray="2 2"
+                opacity={travel.completed ? 0.8 : 0.4}
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
+
+            {/* Future travel paths (not yet shown in travelPaths) */}
+            {paths.slice(completedPaths > 0 ? completedPaths - 1 : 0).map((path, relIdx) => {
+              const idx = (completedPaths > 0 ? completedPaths - 1 : 0) + relIdx;
+              const nextPath = paths[idx + 1];
+              if (!nextPath || idx < completedPaths - 1) return null;
+
+              const lastPoint = path.points[path.points.length - 1];
+              const firstPoint = nextPath.points[0];
+              if (!lastPoint || !firstPoint) return null;
+
+              return (
+                <line
+                  key={`future-travel-${idx}`}
+                  x1={lastPoint.x}
+                  y1={lastPoint.y}
+                  x2={firstPoint.x}
+                  y2={firstPoint.y}
+                  stroke="#d1d5db"
+                  strokeWidth={0.3}
+                  strokeDasharray="2 2"
+                  opacity={0.4}
+                  vectorEffect="non-scaling-stroke"
+                />
+              );
+            })}
+
+            {/* Drawing paths */}
+            {paths.map((path, pathIndex) => {
+              const isComplete = pathIndex < completedPaths;
+              const points = path.points.map((p) => `${p.x},${p.y}`).join(' ');
+
+              return (
+                <polyline
+                  key={pathIndex}
+                  points={points}
+                  fill="none"
+                  stroke={isComplete ? '#22c55e' : '#3b82f6'}
+                  strokeWidth="1"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  opacity={isComplete ? 1 : 0.6}
+                  vectorEffect="non-scaling-stroke"
+                />
+              );
+            })}
+
+            {/* Current position indicator (from plotter) */}
+            {currentPosition && (
+              <g transform={`translate(${currentPosition.x}, ${currentPosition.y})`}>
+                <circle r={2} fill="#ef4444" vectorEffect="non-scaling-stroke" />
+                <circle r={4} fill="none" stroke="#ef4444" strokeWidth={0.5} vectorEffect="non-scaling-stroke" />
+              </g>
+            )}
+
+            {/* Preview pen position indicator */}
+            {previewPenPosition && !currentPosition && previewPosition !== undefined && (
+              <g transform={`translate(${previewPenPosition.x}, ${previewPenPosition.y})`}>
+                <circle r={2} fill="#8b5cf6" vectorEffect="non-scaling-stroke" />
+                <circle r={4} fill="none" stroke="#8b5cf6" strokeWidth={0.5} vectorEffect="non-scaling-stroke" />
+                <circle r={6} fill="none" stroke="#8b5cf6" strokeWidth={0.25} opacity={0.5} vectorEffect="non-scaling-stroke" />
+              </g>
+            )}
+
+            {/* Home position marker */}
+            <g transform="translate(0, 0)">
+              <rect x={-1} y={-1} width={2} height={2} fill="#fff" />
             </g>
-          )}
-
-          {/* Preview pen position indicator */}
-          {previewPenPosition && !currentPosition && previewPosition !== undefined && (
-            <g transform={`translate(${previewPenPosition.x}, ${previewPenPosition.y})`}>
-              <circle r={2} fill="#8b5cf6" vectorEffect="non-scaling-stroke" />
-              <circle r={4} fill="none" stroke="#8b5cf6" strokeWidth={0.5} vectorEffect="non-scaling-stroke" />
-              <circle r={6} fill="none" stroke="#8b5cf6" strokeWidth={0.25} opacity={0.5} vectorEffect="non-scaling-stroke" />
-            </g>
-          )}
-
-          {/* Home position marker */}
-          <g transform="translate(0, 0)">
-            <rect x={-1} y={-1} width={2} height={2} fill="#fff" />
-          </g>
           </g>
         </svg>
+      </div>
     </div>
   );
 }

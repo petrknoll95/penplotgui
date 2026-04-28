@@ -60,7 +60,7 @@ export function OptimizationControls({
     <SidebarPanel title="Optimization" dragRef={dragRef}>
       <div className="flex flex-col gap-3 p-4">
         <div>
-          <label className="text-xs text-foreground/60 mb-2 block">Path Order</label>
+          <label className="text-sm text-foreground/60 mb-2 block">Path Order</label>
           <Select
             value={optimizationMethod}
             onValueChange={(v) => handleMethodChange(v as OptimizationMethod)}
@@ -80,7 +80,7 @@ export function OptimizationControls({
         </div>
 
         {currentMethodInfo && (
-          <p className="text-xs text-foreground/40">
+          <p className="text-sm text-foreground/40">
             {currentMethodInfo.description}
           </p>
         )}

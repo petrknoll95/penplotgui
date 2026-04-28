@@ -117,7 +117,7 @@ export function ControlPanel({ status, filename, onError, optimizationMethod = '
 
   return (
     <SidebarPanel title="Plotter Control" dragRef={dragRef}>
-      <div className="flex flex-col gap-2 p-4 border-b border-foreground/5">
+      <div className="flex flex-col gap-2 p-4">
           {/* Connection Status */}
           <div className="flex items-start justify-between">
             <Badge variant={isConnected ? "success" : "secondary"}>
@@ -132,17 +132,17 @@ export function ControlPanel({ status, filename, onError, optimizationMethod = '
           </div>
 
           {/* Position Display */}
-          <div className="grid grid-cols-3 gap-1 text-center border border-foreground/5 ">
-            <div className="flex flex-col items-center py-2">
-              <div className="text-xs text-muted-foreground">X</div>
+          <div className="grid grid-cols-3 gap-1 text-center">
+            <div className="flex flex-col items-center p-2 bg-foreground/5 rounded-md">
+              <div className="text-sm text-muted-foreground">X</div>
               <div className="font-mono text-sm">{status.position.x.toFixed(2)}</div>
             </div>
-            <div className="flex flex-col items-center py-2 border-l border-foreground/5">
-              <div className="text-xs text-muted-foreground">Y</div>
+            <div className="flex flex-col items-center p-2 bg-foreground/5 rounded-md">
+              <div className="text-sm text-muted-foreground">Y</div>
               <div className="font-mono text-sm">{status.position.y.toFixed(2)}</div>
             </div>
-            <div className="flex flex-col items-center py-2 border-l border-foreground/5">
-              <div className="text-xs text-muted-foreground">Z</div>
+            <div className="flex flex-col items-center p-2 bg-foreground/5 rounded-md">
+              <div className="text-sm text-muted-foreground">Z</div>
               <div className="font-mono text-sm">{status.position.z.toFixed(2)}</div>
             </div>
           </div>
@@ -155,7 +155,7 @@ export function ControlPanel({ status, filename, onError, optimizationMethod = '
                 <span>{status.progress.toFixed(1)}%</span>
               </div>
               <Progress value={status.progress} />
-              <div className="text-xs text-muted-foreground">
+              <div className="text-sm text-muted-foreground">
                 Line {status.currentLine} / {status.totalLines}
               </div>
             </div>

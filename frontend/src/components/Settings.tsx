@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { Button } from '@/components/ui/button';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { SidebarPanel } from '@/components/ui/sidebar-panel';
+import { Switch } from '@/components/ui/switch';
 import type { ConnectDragSource } from 'react-dnd';
 
 interface SettingsProps {
@@ -74,11 +76,11 @@ export function Settings({
       <div className="flex flex-col gap-4 p-4">
         {/* Bed Size */}
         <div>
-          <h3 className="text-xs font-medium text-foreground/80 mb-2">Bed Size (Soft Limits)</h3>
-          <p className="text-xs text-foreground/40 mb-2">Max: 426 x 599 mm</p>
+          <h3 className="text-sm font-medium text-foreground/80 mb-2">Bed Size (Soft Limits)</h3>
+          <p className="mb-2 text-sm text-foreground/40">Max: 426 x 599 mm</p>
           <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-xs text-foreground/60 mb-1 block">Width (mm)</label>
+            <Field>
+              <FieldLabel>Width (mm)</FieldLabel>
               <Input
                 type="number"
                 value={bedWidth}
@@ -86,9 +88,9 @@ export function Settings({
                 min={1}
                 max={426}
               />
-            </div>
-            <div>
-              <label className="text-xs text-foreground/60 mb-1 block">Height (mm)</label>
+            </Field>
+            <Field>
+              <FieldLabel>Height (mm)</FieldLabel>
               <Input
                 type="number"
                 value={bedHeight}
@@ -96,7 +98,7 @@ export function Settings({
                 min={1}
                 max={599}
               />
-            </div>
+            </Field>
           </div>
           <Button onClick={handleSaveBed} disabled={isSavingBed} className="w-full mt-2" variant="outline">
             {isSavingBed ? 'Saving...' : 'Apply Bed Size'}
@@ -105,10 +107,10 @@ export function Settings({
 
         {/* Speed & Motion */}
         <div>
-          <h3 className="text-xs font-medium text-foreground/80 mb-2">Speed & Motion</h3>
+          <h3 className="text-sm font-medium text-foreground/80 mb-2">Speed & Motion</h3>
           <div className="space-y-3">
             <div>
-              <div className="flex justify-between text-xs text-foreground/60 mb-1">
+              <div className="flex justify-between text-sm text-foreground/60 mb-1">
                 <span>Rapid Speed (G0)</span>
                 <span>{rapidSpeed} mm/min</span>
               </div>
@@ -121,7 +123,7 @@ export function Settings({
               />
             </div>
             <div>
-              <div className="flex justify-between text-xs text-foreground/60 mb-1">
+              <div className="flex justify-between text-sm text-foreground/60 mb-1">
                 <span>Draw Speed (G1)</span>
                 <span>{drawSpeed} mm/min</span>
               </div>
@@ -134,14 +136,12 @@ export function Settings({
               />
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-foreground/60">Easing (Accel/Decel)</span>
-              <Button
-                variant={easingEnabled ? "default" : "outline"}
-                size="sm"
-                onClick={() => setEasingEnabled(!easingEnabled)}
-              >
-                {easingEnabled ? 'On' : 'Off'}
-              </Button>
+              <span className="text-sm text-foreground/60">Easing (Accel/Decel)</span>
+              <Switch
+                aria-label="Easing"
+                checked={easingEnabled}
+                onCheckedChange={setEasingEnabled}
+              />
             </div>
           </div>
           <Button onClick={handleSaveSpeed} disabled={isSavingSpeed} className="w-full mt-2" variant="outline">

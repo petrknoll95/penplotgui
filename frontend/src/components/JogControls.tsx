@@ -65,31 +65,31 @@ export function JogControls({ disabled, onError, onSetHome, dragRef }: JogContro
 
         {/* XY Jog Pad */}
         <div className="grid grid-cols-3">
-          <div className="striped bg-[rgba(20,20,20,1)]"/>
+          <div className="h-8" aria-hidden />
           <div>
-            <Button className="w-full" onClick={() => handleJog('Y', 1)} disabled={disabled}>
+            <Button variant="outline" className="w-full" onClick={() => handleJog('Y', 1)} disabled={disabled}>
               Y+
             </Button>
           </div>
-          <div className="striped bg-[rgba(20,20,20,1)]"/>
+          <div className="h-8" aria-hidden />
           <div>
-            <Button className="w-full" onClick={() => handleJog('X', -1)} disabled={disabled}>
+            <Button variant="outline" className="w-full" onClick={() => handleJog('X', -1)} disabled={disabled}>
               X-
             </Button>
           </div>
-          <div className="striped bg-[rgba(20,20,20,1)]"/>
+          <div className="h-8" aria-hidden />
           <div>
-            <Button className="w-full" onClick={() => handleJog('X', 1)} disabled={disabled}>
+            <Button variant="outline" className="w-full" onClick={() => handleJog('X', 1)} disabled={disabled}>
               X+
             </Button>
           </div>
-          <div className="striped bg-[rgba(20,20,20,1)]"/>
+          <div className="h-8" aria-hidden />
           <div>
-            <Button className="w-full" onClick={() => handleJog('Y', -1)} disabled={disabled}>
+            <Button variant="outline" className="w-full" onClick={() => handleJog('Y', -1)} disabled={disabled}>
               Y-
             </Button>
           </div>
-          <div className="striped bg-[rgba(20,20,20,1)]"/>
+          <div className="h-8" aria-hidden />
         </div>
 
         {/* Z / Pen Controls */}

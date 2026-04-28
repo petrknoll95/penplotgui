@@ -3,11 +3,32 @@ import { api } from '../api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SidebarPanel } from '@/components/ui/sidebar-panel';
+import { Switch } from '@/components/ui/switch';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { PathData, Dimensions, Bed, ArtboardSettings, ArtboardPreset, ARTBOARD_PRESETS } from '../types';
 import type { ConnectDragSource } from 'react-dnd';
 
 type Alignment = 'center' | 'top-left' | 'top' | 'top-right' | 'left' | 'right' | 'bottom-left' | 'bottom' | 'bottom-right' | 'custom';
 type ScaleMode = 'fit' | 'percent' | 'width' | 'height';
+
+const ARTBOARD_PRESET_ORDER: ArtboardPreset[] = ['36x48', 'a4', 'a3', 'a5', 'letter', 'custom'];
+const SCALE_MODE_ITEMS: Array<{ value: ScaleMode; label: string }> = [
+  { value: 'fit', label: 'Fit' },
+  { value: 'percent', label: '%' },
+  { value: 'width', label: 'W' },
+  { value: 'height', label: 'H' },
+];
+const ALIGNMENT_ITEMS: Array<{ value: Alignment; label: string; ariaLabel: string }> = [
+  { value: 'top-left', label: '↖', ariaLabel: 'Align top left' },
+  { value: 'top', label: '↑', ariaLabel: 'Align top' },
+  { value: 'top-right', label: '↗', ariaLabel: 'Align top right' },
+  { value: 'left', label: '←', ariaLabel: 'Align left' },
+  { value: 'center', label: '◎', ariaLabel: 'Align center' },
+  { value: 'right', label: '→', ariaLabel: 'Align right' },
+  { value: 'bottom-left', label: '↙', ariaLabel: 'Align bottom left' },
+  { value: 'bottom', label: '↓', ariaLabel: 'Align bottom' },
+  { value: 'bottom-right', label: '↘', ariaLabel: 'Align bottom right' },
+];
 
 export interface PositionSettings {
   alignment: string;
@@ -197,60 +218,65 @@ export function PositionControls({ filename, onPathsUpdate, onError, initialDime
         {/* Artboard Controls */}
         <div className="border border-foreground/10 rounded p-3">
           <div className="flex items-center justify-between mb-2">
-            <label className="text-xs text-foreground/60">Artboard</label>
-            <Button
-              variant={artboardSettings?.enabled ? 'default' : 'outline'}
-              size="sm"
-              onClick={handleArtboardToggle}
-            >
-              {artboardSettings?.enabled ? 'On' : 'Off'}
-            </Button>
+            <label className="text-sm text-foreground/60">Artboard</label>
+            <Switch
+              aria-label="Artboard"
+              checked={Boolean(artboardSettings?.enabled)}
+              onCheckedChange={handleArtboardToggle}
+            />
           </div>
 
           {artboardSettings?.enabled && (
             <div className="space-y-2 mt-2">
               {/* Preset selector */}
-              <div className="flex gap-1 flex-wrap">
-                {(['36x48', 'a4', 'a3', 'a5', 'letter', 'custom'] as ArtboardPreset[]).map((preset) => (
-                  <Button
+              <ToggleGroup
+                value={[artboardSettings.preset]}
+                onValueChange={(value) => {
+                  const preset = value[0] as ArtboardPreset | undefined;
+                  if (preset) handleArtboardPresetChange(preset);
+                }}
+                className="flex-wrap justify-start"
+              >
+                {ARTBOARD_PRESET_ORDER.map((preset) => (
+                  <ToggleGroupItem
                     key={preset}
-                    variant={artboardSettings.preset === preset ? 'default' : 'outline'}
+                    value={preset}
                     size="sm"
-                    onClick={() => handleArtboardPresetChange(preset)}
+                    className="flex-none"
                   >
                     {preset === 'custom' ? 'Custom' : ARTBOARD_PRESETS[preset].label}
-                  </Button>
+                  </ToggleGroupItem>
                 ))}
-              </div>
+              </ToggleGroup>
 
               {/* Orientation toggle */}
-              <div className="flex gap-1">
-                <Button
-                  variant={artboardSettings.orientation === 'portrait' ? 'default' : 'outline'}
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => artboardSettings.orientation !== 'portrait' && handleOrientationToggle()}
-                  disabled={artboardSettings.orientation === 'portrait'}
-                >
+              <ToggleGroup
+                value={[artboardSettings.orientation]}
+                onValueChange={(value) => {
+                  const orientation = value[0];
+                  if (orientation && orientation !== artboardSettings.orientation) {
+                    handleOrientationToggle();
+                  }
+                }}
+              >
+                <ToggleGroupItem value="portrait" size="sm">
                   Portrait
-                </Button>
-                <Button
-                  variant={artboardSettings.orientation === 'landscape' ? 'default' : 'outline'}
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="landscape"
                   size="sm"
-                  className="flex-1"
-                  onClick={() => artboardSettings.orientation !== 'landscape' && handleOrientationToggle()}
-                  disabled={artboardSettings.orientation === 'landscape' || !canFlipOrientation}
+                  disabled={!canFlipOrientation}
                   title={!canFlipOrientation ? 'Landscape orientation exceeds bed size' : ''}
                 >
                   Landscape
-                </Button>
-              </div>
+                </ToggleGroupItem>
+              </ToggleGroup>
 
               {/* Custom dimensions */}
               {artboardSettings.preset === 'custom' && (
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-xs text-foreground/40 mb-1 block">Width (mm)</label>
+                    <label className="text-sm text-foreground/40 mb-1 block">Width (mm)</label>
                     <Input
                       type="number"
                       value={artboardSettings.width}
@@ -264,7 +290,7 @@ export function PositionControls({ filename, onPathsUpdate, onError, initialDime
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-foreground/40 mb-1 block">Height (mm)</label>
+                    <label className="text-sm text-foreground/40 mb-1 block">Height (mm)</label>
                     <Input
                       type="number"
                       value={artboardSettings.height}
@@ -282,7 +308,7 @@ export function PositionControls({ filename, onPathsUpdate, onError, initialDime
 
               {/* Size display for presets */}
               {artboardSettings.preset !== 'custom' && (
-                <div className="text-xs text-foreground/40">
+                <div className="text-sm text-foreground/40">
                   {artboardSettings.width} × {artboardSettings.height} mm
                 </div>
               )}
@@ -292,7 +318,7 @@ export function PositionControls({ filename, onPathsUpdate, onError, initialDime
 
         {/* Current Dimensions Display */}
         {dimensions && (
-          <div className="bg-foreground/5 rounded p-2 text-xs">
+          <div className="bg-foreground/5 rounded p-2 text-sm">
             <div className="flex justify-between text-foreground/60">
               <span>Size:</span>
               <span className="font-mono">{dimensions.width.toFixed(1)} × {dimensions.height.toFixed(1)} mm</span>
@@ -302,41 +328,21 @@ export function PositionControls({ filename, onPathsUpdate, onError, initialDime
 
         {/* Scale Mode */}
         <div>
-          <label className="text-xs text-foreground/60 mb-2 block">Scale</label>
-          <div className="grid grid-cols-4 gap-1">
-            <Button
-              variant={scaleMode === 'fit' ? 'default' : 'outline'}
-
-              onClick={() => handleReposition({ newScaleMode: 'fit' })}
-              disabled={isLoading}
-            >
-              Fit
-            </Button>
-            <Button
-              variant={scaleMode === 'percent' ? 'default' : 'outline'}
-
-              onClick={() => handleReposition({ newScaleMode: 'percent' })}
-              disabled={isLoading}
-            >
-              %
-            </Button>
-            <Button
-              variant={scaleMode === 'width' ? 'default' : 'outline'}
-
-              onClick={() => handleReposition({ newScaleMode: 'width' })}
-              disabled={isLoading}
-            >
-              W
-            </Button>
-            <Button
-              variant={scaleMode === 'height' ? 'default' : 'outline'}
-
-              onClick={() => handleReposition({ newScaleMode: 'height' })}
-              disabled={isLoading}
-            >
-              H
-            </Button>
-          </div>
+          <label className="text-sm text-foreground/60 mb-2 block">Scale</label>
+          <ToggleGroup
+            value={[scaleMode]}
+            onValueChange={(value) => {
+              const nextScaleMode = value[0] as ScaleMode | undefined;
+              if (nextScaleMode) handleReposition({ newScaleMode: nextScaleMode });
+            }}
+            disabled={isLoading}
+          >
+            {SCALE_MODE_ITEMS.map((item) => (
+              <ToggleGroupItem key={item.value} value={item.value}>
+                {item.label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
         </div>
 
         {/* Scale Value Input */}
@@ -406,104 +412,32 @@ export function PositionControls({ filename, onPathsUpdate, onError, initialDime
 
         {/* Alignment Grid */}
         <div>
-          <label className="text-xs text-foreground/60 mb-2 block">Alignment</label>
-          <div className="grid grid-cols-3">
-            <div>
-              <Button
+          <label className="text-sm text-foreground/60 mb-2 block">Alignment</label>
+          <ToggleGroup
+            value={[alignment]}
+            onValueChange={(value) => {
+              const nextAlignment = value[0] as Alignment | undefined;
+              if (nextAlignment) handleReposition({ newAlignment: nextAlignment });
+            }}
+            disabled={isLoading}
+            className="grid grid-cols-3"
+          >
+            {ALIGNMENT_ITEMS.map((item) => (
+              <ToggleGroupItem
+                key={item.value}
+                value={item.value}
+                aria-label={item.ariaLabel}
                 className="w-full"
-                variant={alignment === 'top-left' ? 'default' : 'outline'}
-                onClick={() => handleReposition({ newAlignment: 'top-left' })}
-                disabled={isLoading}
               >
-                ↖
-              </Button>
-            </div>
-            <div>
-              <Button
-                className="w-full"
-                variant={alignment === 'top' ? 'default' : 'outline'}
-                onClick={() => handleReposition({ newAlignment: 'top' })}
-                disabled={isLoading}
-              >
-                ↑
-              </Button>
-            </div>
-            <div>
-              <Button
-                className="w-full"
-                variant={alignment === 'top-right' ? 'default' : 'outline'}
-                onClick={() => handleReposition({ newAlignment: 'top-right' })}
-                disabled={isLoading}
-              >
-                ↗
-              </Button>
-            </div>
-            <div>
-              <Button
-                className="w-full"
-                variant={alignment === 'left' ? 'default' : 'outline'}
-                onClick={() => handleReposition({ newAlignment: 'left' })}
-                disabled={isLoading}
-              >
-                ←
-              </Button>
-            </div>
-            <div>
-              <Button
-                className="w-full"
-                variant={alignment === 'center' ? 'default' : 'outline'}
-                onClick={() => handleReposition({ newAlignment: 'center' })}
-                disabled={isLoading}
-              >
-                ◎
-              </Button>
-            </div>
-            <div>
-              <Button
-                className="w-full"
-                variant={alignment === 'right' ? 'default' : 'outline'}
-                onClick={() => handleReposition({ newAlignment: 'right' })}
-                disabled={isLoading}
-              >
-                →
-              </Button>
-            </div>
-            <div>
-              <Button
-                className="w-full"
-                variant={alignment === 'bottom-left' ? 'default' : 'outline'}
-                onClick={() => handleReposition({ newAlignment: 'bottom-left' })}
-                disabled={isLoading}
-              >
-                ↙
-              </Button>
-            </div>
-            <div>
-              <Button
-                className="w-full"
-                variant={alignment === 'bottom' ? 'default' : 'outline'}
-                onClick={() => handleReposition({ newAlignment: 'bottom' })}
-                disabled={isLoading}
-              >
-                ↓
-              </Button>
-            </div>
-            <div>
-              <Button
-                className="w-full"
-                variant={alignment === 'bottom-right' ? 'default' : 'outline'}
-                onClick={() => handleReposition({ newAlignment: 'bottom-right' })}
-                disabled={isLoading}
-              >
-                ↘
-              </Button>
-            </div>
-          </div>
+                {item.label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
         </div>
 
         {/* Margin */}
         <div>
-          <label className="text-xs text-foreground/60 mb-1 block">Margin (mm)</label>
+          <label className="text-sm text-foreground/60 mb-1 block">Margin (mm)</label>
           <div className="flex gap-2">
             <Input
               type="number"
@@ -526,7 +460,7 @@ export function PositionControls({ filename, onPathsUpdate, onError, initialDime
         {/* Custom Offset */}
         <div className="border border-foreground/10 rounded p-3">
           <div className="flex items-center justify-between mb-2">
-            <label className="text-xs text-foreground/60">Custom Position</label>
+            <label className="text-sm text-foreground/60">Custom Position</label>
             <Button
               variant={alignment === 'custom' ? 'default' : 'ghost'}
 
@@ -538,7 +472,7 @@ export function PositionControls({ filename, onPathsUpdate, onError, initialDime
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs text-foreground/40 mb-1 block">X (mm)</label>
+              <label className="text-sm text-foreground/40 mb-1 block">X (mm)</label>
               <Input
                 type="number"
                 value={offsetX}
@@ -547,7 +481,7 @@ export function PositionControls({ filename, onPathsUpdate, onError, initialDime
               />
             </div>
             <div>
-              <label className="text-xs text-foreground/40 mb-1 block">Y (mm)</label>
+              <label className="text-sm text-foreground/40 mb-1 block">Y (mm)</label>
               <Input
                 type="number"
                 value={offsetY}
