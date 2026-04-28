@@ -39,6 +39,14 @@ export function JogControls({ disabled, onError, onSetHome, dragRef }: JogContro
     }
   };
 
+  const handleHome = async () => {
+    try {
+      await api.home();
+    } catch (e) {
+      onError(e instanceof Error ? e.message : 'Failed to home');
+    }
+  };
+
   const handleReset = async () => {
     try {
       await api.reset();
@@ -123,6 +131,10 @@ export function JogControls({ disabled, onError, onSetHome, dragRef }: JogContro
             Reset
           </Button>
         </div>
+
+        <Button variant="outline" className="w-full" onClick={handleHome} disabled={disabled}>
+          Home All Axes
+        </Button>
 
         {/* Set Home */}
         <Button variant="outline" className="w-full" onClick={onSetHome} disabled={disabled}>

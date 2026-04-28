@@ -32,7 +32,7 @@ function DialogContent({
     <DialogPrimitive.Portal>
       <DialogPrimitive.Backdrop
         data-slot="dialog-backdrop"
-        className="fixed inset-0 z-50 bg-black/70 data-[closed]:opacity-0 data-[open]:opacity-100"
+        className="t-dialog-backdrop fixed inset-0 z-50 bg-black/70"
       />
       <DialogPrimitive.Viewport
         data-slot="dialog-viewport"
@@ -42,7 +42,7 @@ function DialogContent({
           data-slot="dialog-content"
           finalFocus={false}
           className={cn(
-            "w-full max-w-[360px] rounded-lg border border-border bg-card p-6 text-card-foreground shadow-xl shadow-black/40 outline-none data-[closed]:scale-[0.98] data-[closed]:opacity-0 data-[open]:scale-100 data-[open]:opacity-100",
+            "t-modal w-full max-w-[360px] rounded-lg border border-border bg-card p-6 text-card-foreground shadow-xl shadow-black/40 outline-none",
             className
           )}
           {...props}

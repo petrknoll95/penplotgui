@@ -69,7 +69,64 @@
 
 :root {
   --radius: 0.625rem;
+  --modal-open-dur: 250ms;
+  --modal-close-dur: 150ms;
+  --modal-scale: 0.96;
+  --modal-scale-close: 0.96;
+  --modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
   color-scheme: dark;
+}
+
+@layer components {
+  .t-modal {
+    transform-origin: center;
+    transform: scale(var(--modal-scale));
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      transform var(--modal-open-dur) var(--modal-ease),
+      opacity var(--modal-open-dur) var(--modal-ease);
+    will-change: transform, opacity;
+  }
+
+  .t-modal[data-open] {
+    transform: scale(1);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .t-modal[data-closed] {
+    transform: scale(var(--modal-scale-close));
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      transform var(--modal-close-dur) var(--modal-ease),
+      opacity var(--modal-close-dur) var(--modal-ease);
+  }
+
+  .t-dialog-backdrop {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--modal-open-dur) var(--modal-ease);
+  }
+
+  .t-dialog-backdrop[data-open] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .t-dialog-backdrop[data-closed] {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--modal-close-dur) var(--modal-ease);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .t-modal,
+    .t-dialog-backdrop {
+      transition: none !important;
+    }
+  }
 }
 
 @layer base {

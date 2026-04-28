@@ -10,7 +10,7 @@ const STORAGE_KEYS: Record<PanelGroup, string> = {
 
 const DEFAULT_ORDERS: Record<PanelGroup, string[]> = {
   prepare: ['position', 'optimization'],
-  machine: ['control', 'jog', 'settings'],
+  machine: ['jog'],
 }
 
 const isValidOrder = (value: unknown, defaults: string[]) =>

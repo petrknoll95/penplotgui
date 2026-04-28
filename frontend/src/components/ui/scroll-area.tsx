@@ -32,7 +32,7 @@ function ScrollArea({
       >
         <ScrollAreaPrimitive.Thumb
           data-slot="scroll-area-thumb"
-          className="w-1.5 rounded-full bg-foreground/20"
+          className="w-1.5 rounded-full bg-foreground/20 z-10"
         />
       </ScrollAreaPrimitive.Scrollbar>
       <ScrollAreaPrimitive.Corner />

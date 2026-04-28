@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef, ReactElement } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { SvgPreview } from './components/SvgPreview';
-import { ControlPanel } from './components/ControlPanel';
 import { JogControls } from './components/JogControls';
 import { SetHomeModal } from './components/SetHomeModal';
 import { TimelineScrubber } from './components/TimelineScrubber';
@@ -10,9 +9,13 @@ import { PositionControls, PositionSettings } from './components/PositionControl
 import { OptimizationControls } from './components/OptimizationControls';
 import { Sidebar } from './components/Sidebar';
 import { DraggablePanel, PanelDragLayer } from './components/DraggablePanel';
+import { GearSix, X } from '@phosphor-icons/react';
 import { api, createWebSocket } from './api';
 import { PathData, Bed, PlotterStatus, Dimensions, OptimizationMethod, ArtboardSettings } from './types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Tooltip } from '@/components/ui/tooltip';
 import { usePanelOrder, type PanelGroup } from './hooks/usePanelOrder';
 
 const defaultStatus: PlotterStatus = {
@@ -71,6 +74,7 @@ function App() {
 
   // Set Home modal state
   const [isSetHomeModalOpen, setIsSetHomeModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // WebSocket connection
   useEffect(() => {
@@ -178,6 +182,64 @@ function App() {
 
   const isConnected = status.state !== 'disconnected' && status.state !== 'connecting';
   const isPlotting = status.state === 'plotting' || status.state === 'paused';
+  const connectionButtonLabel = status.state === 'connecting' ? 'Connecting' : isConnected ? 'Disconnect' : 'Connect';
+  const connectionButtonTooltip = status.error
+    ? `Status: ${status.state}. ${status.error}`
+    : isConnected && isPlotting
+      ? `Status: ${status.state}. Disconnect is unavailable while the plotter is active.`
+      : isConnected
+        ? `Status: ${status.state}. Click to disconnect from the plotter.`
+        : `Status: ${status.state}. Click to connect to the plotter.`;
+
+  const handleConnect = useCallback(async () => {
+    try {
+      await api.connect();
+    } catch (e) {
+      handleError(e instanceof Error ? e.message : 'Connection failed');
+    }
+  }, [handleError]);
+
+  const handleDisconnect = useCallback(async () => {
+    try {
+      await api.disconnect();
+    } catch (e) {
+      handleError(e instanceof Error ? e.message : 'Disconnect failed');
+    }
+  }, [handleError]);
+
+  const handleTestPlot = useCallback(async () => {
+    try {
+      const width = artboardSettings.width;
+      const height = artboardSettings.height;
+      await api.testPlot(width, height);
+    } catch (e) {
+      handleError(e instanceof Error ? e.message : 'Failed to start test plot');
+    }
+  }, [artboardSettings.height, artboardSettings.width, handleError]);
+
+  const handleStartPlot = useCallback(async () => {
+    if (!filename) {
+      handleError('No file selected');
+      return;
+    }
+
+    try {
+      await api.startPlot(filename, {
+        optimization_method: optimizationMethod,
+        alignment: positionSettings.alignment,
+        margin: positionSettings.margin,
+        scale_mode: positionSettings.scale_mode,
+        scale_value: positionSettings.scale_value,
+        target_width: positionSettings.target_width,
+        target_height: positionSettings.target_height,
+        artboard_enabled: true,
+        artboard_width: artboardSettings.width,
+        artboard_height: artboardSettings.height,
+      });
+    } catch (e) {
+      handleError(e instanceof Error ? e.message : 'Failed to start plot');
+    }
+  }, [artboardSettings.height, artboardSettings.width, filename, handleError, optimizationMethod, positionSettings]);
 
   const { orders, reorder } = usePanelOrder();
 
@@ -185,9 +247,7 @@ function App() {
   const panelTitles: Record<string, string> = {
     position: 'Position & Size',
     optimization: 'Optimization',
-    control: 'Plotter Control',
     jog: 'Manual Control',
-    settings: 'Settings',
   };
 
   // Panel configuration - maps panel IDs to their rendered components
@@ -218,29 +278,11 @@ function App() {
         onPreviewUpdatingChange={setIsPreviewUpdating}
       />
     ),
-    control: (
-      <ControlPanel
-        status={status}
-        filename={filename}
-        onError={handleError}
-        optimizationMethod={optimizationMethod}
-        positionSettings={positionSettings}
-        artboardSettings={artboardSettings}
-      />
-    ),
     jog: (
       <JogControls
         disabled={!isConnected || isPlotting}
         onError={handleError}
         onSetHome={() => setIsSetHomeModalOpen(true)}
-      />
-    ),
-    settings: (
-      <Settings
-        onError={handleError}
-        initialBedWidth={bed.width}
-        initialBedHeight={bed.height}
-        onBedSizeChange={(width, height) => setBed({ width, height })}
       />
     ),
   };
@@ -264,8 +306,66 @@ function App() {
     });
 
   return (
-    <div className="h-screen overflow-hidden bg-[rgba(12,12,12,1)] grid grid-cols-[320px_minmax(0,1fr)_320px]">
+    <div className="h-screen overflow-hidden bg-[rgba(12,12,12,1)] grid grid-cols-[320px_minmax(0,1fr)_320px] grid-rows-[3rem_minmax(0,1fr)]">
       <PanelDragLayer />
+
+      <header
+        aria-label="Application header"
+        className="col-span-3 flex items-center justify-between gap-3 border-b border-foreground/5 bg-card px-2"
+      >
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="flex gap-1 text-center">
+            <div className="flex items-center p-2 gap-2 leading-none">
+              <div className="text-sm text-muted-foreground">X</div>
+              <div className="font-mono text-sm">{status.position.x.toFixed(2)}</div>
+            </div>
+            <div className="flex items-center p-2 gap-2 leading-none">
+              <div className="text-sm text-muted-foreground">Y</div>
+              <div className="font-mono text-sm">{status.position.y.toFixed(2)}</div>
+            </div>
+            <div className="flex items-center p-2 gap-2 leading-none">
+              <div className="text-sm text-muted-foreground">Z</div>
+              <div className="font-mono text-sm">{status.position.z.toFixed(2)}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2">
+          <Tooltip content={connectionButtonTooltip} side="bottom" align="end">
+            <Button
+              variant={status.state === 'error' ? "destructive" : isConnected ? "secondary" : "outline"}
+              onClick={isConnected ? handleDisconnect : handleConnect}
+              disabled={status.state === 'connecting' || (isConnected && isPlotting)}
+            >
+              {connectionButtonLabel}
+            </Button>
+          </Tooltip>
+          <Button
+            variant="outline"
+            onClick={handleTestPlot}
+            disabled={!isConnected || isPlotting || isLoading}
+          >
+            Test
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleStartPlot}
+            disabled={!isConnected || !filename || isPlotting || isLoading || isPreviewUpdating}
+          >
+            Start Plot
+          </Button>
+          <Tooltip content="Settings" side="bottom" align="end">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setIsSettingsOpen(true)}
+              aria-label="Open settings"
+            >
+              <GearSix weight="bold" />
+            </Button>
+          </Tooltip>
+        </div>
+      </header>
 
       <Sidebar side="left">
         <FileUpload onFileSelect={handleFileSelect} isLoading={isLoading} hasFile={paths.length > 0} />
@@ -274,14 +374,6 @@ function App() {
 
       {/* Main Content */}
       <main className="relative min-w-0 w-full overflow-auto overscroll-none bg-[radial-gradient(circle_at_center,color-mix(in_oklch,var(--color-foreground)_10%,var(--color-background))_.075em,transparent_.075em)] bg-size-[1em_1em]">
-        {/* Position Display */}
-        <div className="absolute top-6 right-6 bg-card/90 backdrop-blur border border-foreground/10 rounded-lg px-4 py-2 font-mono text-sm z-10">
-          <div className="flex gap-4">
-            <span className="text-muted-foreground">X: <span className="text-foreground">{status.position.x.toFixed(2)}</span></span>
-            <span className="text-muted-foreground">Y: <span className="text-foreground">{status.position.y.toFixed(2)}</span></span>
-          </div>
-        </div>
-
         {/* Error Banner */}
         {error && (
           <div className="mb-4">
@@ -330,6 +422,28 @@ function App() {
       <Sidebar side="right">
         {renderPanelGroup('machine')}
       </Sidebar>
+
+      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+        <DialogContent className="max-w-[440px] p-0">
+          <div className="flex items-center justify-between border-b border-foreground/5 p-4">
+            <DialogTitle>Settings</DialogTitle>
+            <DialogClose
+              aria-label="Close settings"
+              className="inline-flex size-8 items-center justify-center rounded-md border border-transparent text-foreground/70 outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              <X weight="bold" className="size-4" />
+            </DialogClose>
+          </div>
+          <div className="max-h-[calc(100vh-8rem)] overflow-y-auto">
+            <Settings
+              onError={handleError}
+              initialBedWidth={bed.width}
+              initialBedHeight={bed.height}
+              onBedSizeChange={(width, height) => setBed({ width, height })}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Set Home Modal */}
       <SetHomeModal
